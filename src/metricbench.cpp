@@ -24,9 +24,16 @@ tsqueue<unsigned int> tsQueue;
 
 int main(int argc, const char **argv)
 {
+
+    std::string runMode = "run";
+
     po::options_description desc("Commandline options");
     desc.add_options()
 	("help", "help message")
+	("mode", po::value<string>(&runMode)->default_value("run"), "mode: run (default) or prepare (load "
+	"initial dataset")
+	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(8), "working "
+	"threads (default: 8)")
 	("engine", po::value<string>()->default_value("InnoDB"), "set storage engine (default "
 	"InnoDB)")
 	("engine-extra", po::value<string>(), "extra storage engine options, e.g. "
@@ -63,19 +70,44 @@ int main(int argc, const char **argv)
 
 	Preparer Runner(MLP);
     
-	try {
+	if (runMode == "prepare") {
+	    cout << "PREPARE mode" << endl;
+	    Config::runMode = PREPARE;
+	    try {
 
-		Runner.Run();
+		Runner.Prep();
 
 		cout << "# done!" << endl;
 
-	} catch (std::runtime_error &e) {
+	    } catch (std::runtime_error &e) {
 
 		cout << "# ERR: runtime_error in " << __FILE__;
 		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
 		cout << "# ERR: " << e.what() << endl;
 
 		return EXIT_FAILURE;
+	    }
+	    return EXIT_SUCCESS;
+	}
+
+	if (runMode == "run") {
+	    cout << "RUN mode" << endl;
+	    Config::runMode = RUN;
+	    try {
+
+		Runner.Run();
+
+		cout << "# done!" << endl;
+
+	    } catch (std::runtime_error &e) {
+
+		cout << "# ERR: runtime_error in " << __FILE__;
+		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+		cout << "# ERR: " << e.what() << endl;
+
+		return EXIT_FAILURE;
+	    }
+	    return EXIT_SUCCESS;
 	}
 
 	return EXIT_SUCCESS;

@@ -54,6 +54,14 @@ public:
         empty_cond.wait(lk,[this]{return data_queue.empty();});
     }
 
+    void wait_size(unsigned int sz)
+    {
+        std::unique_lock<std::mutex> lk(mut);
+	while (data_queue.size() > sz) {
+	    empty_cond.wait(lk);
+	}
+    }
+
     bool try_pop(T& value)
     {
         std::lock_guard<std::mutex> lk(mut);

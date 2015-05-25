@@ -10,7 +10,7 @@
 #include "MySQLDriver.hpp"
 #include "Config.hpp"
 
-/* General class to load data, not DB specific */
+/* General class to handle benchmark, not DB specific */
 class Preparer {
 	MySQLDriver& DataLoader;
 	std::atomic<unsigned int> insertProgress {0};
@@ -18,7 +18,12 @@ class Preparer {
 
 public:
 	Preparer(MySQLDriver &ML) :DataLoader(ML) {}
+	/* prepare data, like create schema and insert */
+	void Prep();
+	/* Run benchmark itself */
 	void Run();
-	void progressPrint() const;
+private:
+	/* periodical print of prepare progress */
+	void prepProgressPrint() const;
 };
 

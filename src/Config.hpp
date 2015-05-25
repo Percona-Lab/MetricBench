@@ -1,8 +1,12 @@
 #pragma once
 
+enum  RunModeE { PREPARE = 1, RUN };
+
 /* Connection parameter and sample data */
 namespace Config
 {
+
+
     constexpr auto EXAMPLE_DB = "test" ;
     constexpr auto EXAMPLE_HOST = "tcp://127.0.0.1:3306";
     constexpr auto EXAMPLE_USER = "root";
@@ -18,6 +22,10 @@ namespace Config
 
     constexpr unsigned int LoadDays = 1;
 
+    extern unsigned int LoaderThreads;
+
     extern std::string storageEngine;
     extern std::string storageEngineExtra;
+
+    extern RunModeE runMode;
 }

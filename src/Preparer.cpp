@@ -8,7 +8,7 @@
 
 extern tsqueue<unsigned int> tsQueue;
 
-void Preparer::progressPrint() const {
+void Preparer::prepProgressPrint() const {
 
     auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -31,30 +31,40 @@ void Preparer::progressPrint() const {
 
 }
 
-void Preparer::Run(){
+void Preparer::Prep(){
 
     DataLoader.CreateSchema();
-
-    DataLoader.Run();
+    DataLoader.Prep();
 
     /* create thread printing progress */
-    std::thread threadReporter([this](){ progressPrint(); });
+    std::thread threadReporter([this](){ prepProgressPrint(); });
 
     /* Populate the test table with data */
     for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadDays * 86400 ; ts += 60) {
 	cout << "Timestamp: " << ts << endl;
-
 	tsQueue.push (ts);
 	insertProgress = ts;
 	tsQueue.wait_empty();
 
     } 
 
-
     cout << "#\t Data Load Finished" << endl;
     progressLoad = false;
     /* wait on reporter to finish */
     threadReporter.join();
 
+}
+
+void Preparer::Run(){
+    auto maxTs = DataLoader.Run();
+   
+    cout << "Running benchmark from ts: "<<maxTs + 60<<", to ts: "
+	<< maxTs + Config::LoadDays * 86400<<endl;
+    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadDays * 86400; ts += 60) {
+	cout << "Timestamp: " << ts << endl;
+	tsQueue.push (ts);
+	insertProgress = ts;
+	tsQueue.wait_size(Config::LoaderThreads*10);
+    }
 }
 
