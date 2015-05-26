@@ -6,8 +6,9 @@
 #include "MySQLDriver.hpp"
 #include "tsqueue.hpp"
 #include "Config.hpp"
+#include "Message.hpp"
 
-extern tsqueue<unsigned int> tsQueue;
+extern tsqueue<Message> tsQueue;
 
 using namespace std;
 
@@ -18,7 +19,40 @@ void MySQLDriver::Prep() {
     }
 }
 
-unsigned int MySQLDriver::Run() {
+void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
+        
+    sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
+    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
+    con->setSchema(database);
+
+    std::unique_ptr< sql::Statement > stmt(con->createStatement());
+
+    { /* block for ResultSet ptr */
+	std::unique_ptr< sql::ResultSet >
+	    res(stmt->executeQuery("SELECT "
+			"unix_timestamp(min(period)) mints,unix_timestamp(max(period)) maxts FROM metrics"));
+
+	if (res->next()) {
+	    minTs = res->getUInt("mints");
+	    maxTs = res->getUInt("maxts");
+	    tsRange = maxTs - minTs;
+	    cout << "MinTS: "<< minTs 
+		<< ", MaxTS: " << maxTs 
+		<< ", Range: "<< (maxTs-minTs) << endl;
+	} else {
+	    throw std::runtime_error ("SELECT timestamp from metrics returns no result");
+	}
+    }
+
+    for (auto i = 0; i < Config::LoaderThreads; i++) {
+	    std::thread threadInsertData([this](){ InsertData(); });
+	    threadInsertData.detach();
+    } 
+
+}
+
+
+unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
     
     sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
     std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
@@ -26,31 +60,21 @@ unsigned int MySQLDriver::Run() {
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
-    unsigned int maxTs;
+    unsigned int maxDevID = 0;
     
     { /* block for ResultSet ptr */
-	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery("SELECT "
-		    "unix_timestamp(min(period)) mints,unix_timestamp(max(period)) maxts FROM metrics"));
+        stringstream sql;
+	sql.str("");
+	sql << "SELECT max(device_id) maxdev FROM metrics "
+	    << "WHERE period=from_unixtime(" << ts << ")";
+	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
 
 	if (res->next()) {
-	    auto minTs = res->getUInt("mints");
-	    maxTs = res->getUInt("maxts");
-	    tsRange = maxTs - minTs;
-	    cout << "MinTS: "<< minTs 
-		<< ", MaxTS: " << maxTs 
-		<< ", Range: "<< (maxTs-minTs) 
-		<< endl;
-	} else {
-	    throw std::runtime_error ("SELECT timestamp from metrics returns no result");
-	}
+	    maxDevID = res->getUInt("maxdev");
+	} 
     }
 
-    for (auto i = 0; i < Config::LoaderThreads; i++) {
-        std::thread threadInsertData([this](){ InsertData(); });
-	threadInsertData.detach();
-    }
-
-    return maxTs;
+    return maxDevID;
 
 }
 
@@ -66,18 +90,17 @@ void MySQLDriver::InsertData() {
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
-
-    unsigned int ts;
+    Message m;
 
     while(true) { // TODO:: have a boolean flag to stop
 	/* wait on a event from queue */
-	tsQueue.wait_and_pop(ts);
-	cout << "Insert thread received ts: " << ts << endl;
+	tsQueue.wait_and_pop(m);
 
-	InsertQuery(ts, *stmt);
-
-	if (Config::runMode == RUN) {
-	    DeleteQuery( ts - tsRange - 60, *stmt);
+	switch(m.op) {
+	    case Message::Insert: InsertQuery(m.ts, m.device_id, *stmt);
+		break;
+	    case Message::Delete: DeleteQuery(m.ts, m.device_id, *stmt);
+		break;
 	}
 
     }
@@ -85,64 +108,58 @@ void MySQLDriver::InsertData() {
 }
 
 
-void MySQLDriver::InsertQuery(unsigned int timestamp, sql::Statement & stmt) {
-	auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
+void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
 
 	stringstream sql;
 
-	/* Devices loop */
-	for (auto dc = 1; dc <= devicesCnt ; dc++) {
+	try {
+	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
+	stmt.execute("BEGIN");
+	sql.str("");
+	sql << "INSERT INTO metrics(period, device_id, metric_id, cnt, val ) VALUES ";
+	bool notfirst = false;
 
-	    auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
-	    stmt.execute("BEGIN");
-	    sql.str("");
-	    sql << "INSERT INTO metrics(period, device_id, metric_id, cnt, val ) VALUES ";
-	    bool notfirst = false;
-	    
-	    /* metrics loop */
-	    for (auto mc = 1; mc <= metricsCnt; mc++) {
-		if (notfirst) {
-		    sql << ",";
-		}
-		notfirst = true;	
-		auto v = PGen->GetNext(0.0, Config::MaxValue);
-		sql << "(from_unixtime(" 
-		    << timestamp << "), " 
-		    << dc << ", " 
-		    << mc << "," 
-		    << PGen->GetNext(Config::MaxCnt, 0) 
-		    << ", " << (v < 0.5 ? 0 : v)  << ")";
-
+	/* metrics loop */
+	for (auto mc = 1; mc <= metricsCnt; mc++) {
+	    if (notfirst) {
+		sql << ",";
 	    }
-	    stmt.execute(sql.str());
-	    stmt.execute("COMMIT");
+	    notfirst = true;	
+	    auto v = PGen->GetNext(0.0, Config::MaxValue);
+	    sql << "(from_unixtime(" 
+		<< timestamp << "), " 
+		<< device_id << ", " 
+		<< mc << "," 
+		<< PGen->GetNext(Config::MaxCnt, 0) 
+		<< ", " << (v < 0.5 ? 0 : v)  << ")";
+
 	}
+	stmt.execute(sql.str());
+	stmt.execute("COMMIT");
+    } catch (sql::SQLException &e) {
+	cout << "# ERR: SQLException in " << __FILE__;
+	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+	cout << "# ERR: " << e.what();
+	cout << " (MySQL error code: " << e.getErrorCode();
+	cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	throw std::runtime_error ("Can't execute DELETE");
+    }
 
 }
 
-void MySQLDriver::DeleteQuery(unsigned int timestamp, sql::Statement & stmt) {
+void MySQLDriver::DeleteQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
 
     stringstream sql;
-    cout << "Delete received ts: " << timestamp << endl;
 
     try {
 
 	stmt.execute("BEGIN");
 	sql.str("");
-	sql << "DELETE FROM metrics WHERE period=from_unixtime(" << timestamp << ")";
+	sql << "DELETE FROM metrics WHERE period=from_unixtime(" << timestamp << ")"
+	    << " AND device_id=" << device_id;
 	stmt.execute(sql.str());
 	stmt.execute("COMMIT");
 
-	/* Devices loop */
-	/*for (auto dc = 1; dc <= Config::MaxDevices; dc++) {
-	    stmt.execute("BEGIN");
-	    sql.str("");
-	    sql << "DELETE FROM metrics WHERE period=from_unixtime(" << timestamp
-		<< ") AND device_id=" << dc;
-	    stmt.execute(sql.str());
-	    stmt.execute("COMMIT");
-	}*/
-	cout << "Delete finished ts: " << timestamp << endl;
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;
 	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;

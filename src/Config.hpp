@@ -15,12 +15,12 @@ namespace Config
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
-    constexpr unsigned int MaxDevices = 100;
+    constexpr unsigned int MaxDevices = 32;
     constexpr unsigned int MaxMetrics = 1000;
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
 
-    constexpr unsigned int LoadDays = 1;
+    constexpr unsigned int LoadDays = 100;
 
     extern unsigned int LoaderThreads;
 

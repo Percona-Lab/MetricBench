@@ -44,11 +44,14 @@ public:
 		    url(url) {}
     void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
     void Prep();
-    unsigned int Run();
+    void Run(unsigned int& minTs, unsigned int& maxTs);
     void CreateSchema();
+
+    /* return max device_id available for given ts */
+    unsigned int getMaxDevIdForTS(unsigned int ts);
 
 private:
     void InsertData();
-    void InsertQuery(unsigned int timestamp, sql::Statement & stmt);
-    void DeleteQuery(unsigned int timestamp, sql::Statement & stmt);
+    void InsertQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
+    void DeleteQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
 };

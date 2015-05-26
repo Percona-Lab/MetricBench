@@ -12,6 +12,7 @@
 
 #include "tsqueue.hpp"
 #include "Preparer.hpp"
+#include "Message.hpp"
 
 using namespace std;
 
@@ -19,7 +20,7 @@ namespace po = boost::program_options;
 
 /* Global shared structures */
 /* Message queue with timestamps */
-tsqueue<unsigned int> tsQueue;
+tsqueue<Message> tsQueue;
 
 
 int main(int argc, const char **argv)
@@ -69,6 +70,7 @@ int main(int argc, const char **argv)
 	MLP.SetGenerator(&PG);
 
 	Preparer Runner(MLP);
+	Runner.SetGenerator(&PG);
     
 	if (runMode == "prepare") {
 	    cout << "PREPARE mode" << endl;
