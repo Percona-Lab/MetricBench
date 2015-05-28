@@ -34,7 +34,7 @@ int main(int argc, const char **argv)
     desc.add_options()
 	("help", "help message")
 	("mode", po::value<string>(&runMode)->default_value("run"), "mode: run (default) or prepare (load "
-	"initial dataset")
+	"initial dataset)")
 	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(8), "working "
 	"threads (default: 8)")
 	("engine", po::value<string>()->default_value("InnoDB"), "set storage engine (default "
@@ -46,6 +46,11 @@ int main(int argc, const char **argv)
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm); 
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        return 1;
+    }
 
     if (vm.count("engine")) {
 	cout << "Using Storage engine: " 
