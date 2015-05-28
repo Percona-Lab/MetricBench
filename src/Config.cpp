@@ -7,6 +7,6 @@ namespace Config
 
     std::string storageEngine = "InnoDB";
     std::string storageEngineExtra = "";
-    
+
     RunModeE runMode = RUN;
 }

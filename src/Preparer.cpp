@@ -1,4 +1,4 @@
-#include <thread>      
+#include <thread>
 #include <chrono>
 #include <atomic>
 
@@ -23,13 +23,13 @@ void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const
 			) : 0 );
 
 	cout << std::fixed << std::setprecision(2)
-	    << "Time: " << secFromStart << "sec, " 
+	    << "Time: " << secFromStart << "sec, "
 	    << "Progress: " << insertProgress - startTs
-	    << ", % done: " << 
-	    static_cast<double> (insertProgress - startTs) * 100 / (total) 
-	    << "%, " 
+	    << ", % done: " <<
+	    static_cast<double> (insertProgress - startTs) * 100 / (total)
+	    << "%, "
 	    << "Est total time: " << estTotalTime
-	    << "sec, Left: " << estTotalTime - secFromStart 
+	    << "sec, Left: " << estTotalTime - secFromStart
 	    << endl;
     }
 
@@ -43,7 +43,7 @@ void Preparer::Prep(){
     /* create thread printing progress */
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
-	Config::StartTimestamp, 
+	Config::StartTimestamp,
 	Config::LoadDays * 86400);
 
     /* Populate the test table with data */
@@ -62,7 +62,7 @@ void Preparer::Prep(){
 
 	insertProgress = ts;
 
-    } 
+    }
 
     cout << "#\t Data Load Finished" << endl;
     progressLoad = false;
@@ -72,7 +72,7 @@ void Preparer::Prep(){
 }
 
 void Preparer::Run(){
-    
+
     unsigned int minTs, maxTs;
 
     DataLoader.Run(minTs, maxTs);
@@ -82,10 +82,10 @@ void Preparer::Run(){
     /* create thread printing progress */
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
-	maxTs + 60, 
+	maxTs + 60,
 	Config::LoadDays * 86400);
 
-   
+
     cout << "Running benchmark from ts: "
 	<< maxTs + 60 << ", to ts: "
 	<< maxTs + Config::LoadDays * 86400
@@ -99,7 +99,7 @@ void Preparer::Run(){
 	unsigned int oldDevicesCnt = DataLoader.getMaxDevIdForTS(ts - tsRange - 60);
 
 /*
-	cout << "Timestamp: " << ts 
+	cout << "Timestamp: " << ts
 	    << ", Devices: "
 	    << devicesCnt
 	    << ", Old Devices: "

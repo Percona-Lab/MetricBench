@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <iomanip> 
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -25,17 +25,17 @@
 using namespace std;
 
 class MySQLDriver {
-    const string user; 
+    const string user;
     const string pass;
     const string database;
     const string url;
     ParetoGenerator* PGen;
-	
+
     /* range between first and last records in metrics */
     unsigned int tsRange;
 
 public:
-    MySQLDriver(const string user, 
+    MySQLDriver(const string user,
 	    const string pass,
 	    const string database,
 	    const string url) :user(user),

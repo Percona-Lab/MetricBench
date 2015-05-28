@@ -1,14 +1,14 @@
 #include <stdlib.h>
 #include <iostream>
-#include <iomanip> 
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
-#include <thread>      
+#include <thread>
 #include <chrono>
 #include <atomic>
 
-#include <boost/program_options.hpp> 
+#include <boost/program_options.hpp>
 #include <boost/lockfree/queue.hpp>
 
 #include "tsqueue.hpp"
@@ -45,7 +45,7 @@ int main(int argc, const char **argv)
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm); 
+    po::notify(vm);
 
     if (vm.count("help")) {
         cout << desc << "\n";
@@ -53,12 +53,12 @@ int main(int argc, const char **argv)
     }
 
     if (vm.count("engine")) {
-	cout << "Using Storage engine: " 
+	cout << "Using Storage engine: "
 	    << vm["engine"].as<string>() << endl;
 	Config::storageEngine = vm["engine"].as<string>();
     }
     if (vm.count("engine-extra")) {
-	cout << "Using Storage engine extra options: " 
+	cout << "Using Storage engine extra options: "
 	    << vm["engine-extra"].as<string>() << endl;
 	Config::storageEngineExtra = vm["engine-extra"].as<string>();
     }
@@ -83,7 +83,7 @@ int main(int argc, const char **argv)
 
 	std::thread threadStats(&Stats::Run, &st);
 	threadStats.detach();
-    
+
 	if (runMode == "prepare") {
 	    cout << "PREPARE mode" << endl;
 	    Config::runMode = PREPARE;

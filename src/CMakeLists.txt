@@ -13,7 +13,7 @@ set(MYSQLCONNECTORCPP_ROOT_DIR
 		${MYSQLCONNECTORCPP_ROOT_DIR}
 		PATH_SUFFIXES
 		include)
-		
+
 	find_library(MYSQLCONNECTORCPP_LIBRARY
 		NAMES
 		mysqlcppconn-static
