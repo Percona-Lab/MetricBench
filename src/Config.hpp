@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+using namespace std;
+
 enum  RunModeE { PREPARE = 1, RUN };
 
 /* Connection parameter and sample data */
@@ -11,6 +14,11 @@ namespace Config
     constexpr auto DEFAULT_HOST = "tcp://127.0.0.1:3306";
     constexpr auto DEFAULT_USER = "root";
     constexpr auto DEFAULT_PASS = "";
+
+    extern std::string connDb;
+    extern std::string connHost;
+    extern std::string connUser;
+    extern std::string connPass;
 
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;

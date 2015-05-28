@@ -63,10 +63,10 @@ int main(int argc, const char **argv)
 	Config::storageEngineExtra = vm["engine-extra"].as<string>();
     }
 
-    string url(Config::DEFAULT_HOST);
-    const string user(Config::DEFAULT_USER);
-    const string pass(Config::DEFAULT_PASS);
-    const string database(Config::DEFAULT_DB);
+    string url(Config::connHost);
+    const string user(Config::connUser);
+    const string pass(Config::connPass);
+    const string database(Config::connDb);
 
 
     /* prepare routine */
