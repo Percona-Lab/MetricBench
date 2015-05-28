@@ -25,10 +25,17 @@ set(MYSQLCONNECTORCPP_ROOT_DIR
 		lib
                 lib/mysql)
 
-find_library(MYSQL_CLIENT NAMES libmysqlclient.a PATH_SUFFIXES lib64 lib64/mysql lib lib/mysql)
+find_library(MYSQL_CLIENT
+        NAMES
+        libmysqlclient.a
+        PATH_SUFFIXES
+        lib64
+        lib64/mysql
+        lib lib/mysql)
+
 message(STATUS ${MYSQL_CLIENT})
 
-set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS program_options)
 include_directories( ${Boost_INCLUDE_DIRS} )
 
