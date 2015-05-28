@@ -7,10 +7,10 @@ namespace Config
 {
 
 
-    constexpr auto EXAMPLE_DB = "test" ;
-    constexpr auto EXAMPLE_HOST = "tcp://127.0.0.1:3306";
-    constexpr auto EXAMPLE_USER = "root";
-    constexpr auto EXAMPLE_PASS = "";
+    constexpr auto DEFAULT_DB = "test" ;
+    constexpr auto DEFAULT_HOST = "tcp://127.0.0.1:3306";
+    constexpr auto DEFAULT_USER = "root";
+    constexpr auto DEFAULT_PASS = "";
 
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
