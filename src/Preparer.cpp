@@ -48,13 +48,13 @@ void Preparer::Prep(){
 
     /* Populate the test table with data */
     for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadDays * 86400 ; ts += 60) {
-	cout << "Timestamp: " << ts << endl;
+//	cout << "Timestamp: " << ts << endl;
 
 	auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 
 	/* Devices loop */
 	for (auto dc = 1; dc <= devicesCnt ; dc++) {
-	    Message m(Message::Insert, ts, dc);
+	    Message m(Insert, ts, dc);
 	    tsQueue.push(m);
 	}
 
@@ -98,21 +98,22 @@ void Preparer::Run(){
         unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 	unsigned int oldDevicesCnt = DataLoader.getMaxDevIdForTS(ts - tsRange - 60);
 
+/*
 	cout << "Timestamp: " << ts 
 	    << ", Devices: "
 	    << devicesCnt
 	    << ", Old Devices: "
 	    << oldDevicesCnt
 	    << endl;
-
+*/
 	/* Devices loop */
 	for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
 	    if (dc <= devicesCnt) {
-		Message m(Message::Insert, ts, dc);
+		Message m(Insert, ts, dc);
 		tsQueue.push(m);
 	    }
 	    if (dc <= oldDevicesCnt) {
-		Message m(Message::Delete, ts - tsRange - 60, dc);
+		Message m(Delete, ts - tsRange - 60, dc);
 		tsQueue.push(m);
 	    }
 	}

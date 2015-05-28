@@ -20,7 +20,7 @@ namespace Config
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
 
-    constexpr unsigned int LoadDays = 100;
+    constexpr unsigned int LoadDays = 10;
 
     extern unsigned int LoaderThreads;
 

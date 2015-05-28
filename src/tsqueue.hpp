@@ -86,5 +86,11 @@ public:
         std::lock_guard<std::mutex> lk(mut);
         return data_queue.empty();
     }
+
+    unsigned int size() const
+    {
+        std::lock_guard<std::mutex> lk(mut);
+        return data_queue.size();
+    }
 };
 

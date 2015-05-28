@@ -9,10 +9,12 @@
 #include <atomic>
 
 #include <boost/program_options.hpp> 
+#include <boost/lockfree/queue.hpp>
 
 #include "tsqueue.hpp"
 #include "Preparer.hpp"
 #include "Message.hpp"
+#include "Stats.hpp"
 
 using namespace std;
 
@@ -21,7 +23,7 @@ namespace po = boost::program_options;
 /* Global shared structures */
 /* Message queue with timestamps */
 tsqueue<Message> tsQueue;
-
+tsqueue<StatMessage> statQueue;
 
 int main(int argc, const char **argv)
 {
@@ -71,6 +73,11 @@ int main(int argc, const char **argv)
 
 	Preparer Runner(MLP);
 	Runner.SetGenerator(&PG);
+
+	Stats st;
+
+	std::thread threadStats(&Stats::Run, &st);
+	threadStats.detach();
     
 	if (runMode == "prepare") {
 	    cout << "PREPARE mode" << endl;

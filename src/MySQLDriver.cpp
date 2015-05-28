@@ -2,6 +2,7 @@
 #include <chrono>
 #include <atomic>
 
+#include <boost/lockfree/queue.hpp>
 
 #include "MySQLDriver.hpp"
 #include "tsqueue.hpp"
@@ -9,6 +10,7 @@
 #include "Message.hpp"
 
 extern tsqueue<Message> tsQueue;
+extern tsqueue<StatMessage> statQueue;
 
 using namespace std;
 
@@ -97,9 +99,9 @@ void MySQLDriver::InsertData() {
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Message::Insert: InsertQuery(m.ts, m.device_id, *stmt);
+	    case Insert: InsertQuery(m.ts, m.device_id, *stmt);
 		break;
-	    case Message::Delete: DeleteQuery(m.ts, m.device_id, *stmt);
+	    case Delete: DeleteQuery(m.ts, m.device_id, *stmt);
 		break;
 	}
 
@@ -110,11 +112,11 @@ void MySQLDriver::InsertData() {
 
 void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
 
-	stringstream sql;
+    stringstream sql;
 
-	try {
+    try {
 	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
-	stmt.execute("BEGIN");
+
 	sql.str("");
 	sql << "INSERT INTO metrics(period, device_id, metric_id, cnt, val ) VALUES ";
 	bool notfirst = false;
@@ -134,8 +136,17 @@ void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sq
 		<< ", " << (v < 0.5 ? 0 : v)  << ")";
 
 	}
+
+	auto t0 = std::chrono::high_resolution_clock::now();
+	stmt.execute("BEGIN");
 	stmt.execute(sql.str());
 	stmt.execute("COMMIT");
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+
+	StatMessage sm(InsertMetric, time_us, metricsCnt);
+	statQueue.push(sm);
+
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;
 	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
@@ -153,12 +164,19 @@ void MySQLDriver::DeleteQuery(unsigned int timestamp, unsigned int device_id, sq
 
     try {
 
-	stmt.execute("BEGIN");
 	sql.str("");
 	sql << "DELETE FROM metrics WHERE period=from_unixtime(" << timestamp << ")"
 	    << " AND device_id=" << device_id;
+
+	auto t0 = std::chrono::high_resolution_clock::now();
+	stmt.execute("BEGIN");
 	stmt.execute(sql.str());
 	stmt.execute("COMMIT");
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+
+	StatMessage sm(DeleteDevice, time_us, 1);
+	statQueue.push(sm);
 
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;
