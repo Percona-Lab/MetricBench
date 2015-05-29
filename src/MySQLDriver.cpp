@@ -202,6 +202,8 @@ void MySQLDriver::CreateSchema() {
     try {
 
 	stmt->execute("DROP TABLE IF EXISTS metrics");
+	if (!Config::preCreateStatement.empty())
+	    stmt->execute(Config::preCreateStatement);
 	stmt->execute(R"(
 	    CREATE TABLE metrics (
 		    period timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
