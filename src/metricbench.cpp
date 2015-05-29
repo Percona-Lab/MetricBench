@@ -30,24 +30,28 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
 
-    po::options_description desc("Commandline options");
+    po::options_description desc("Command line options:");
     desc.add_options()
 	("help", "help message")
-	("mode", po::value<string>(&runMode)->default_value("run"), "mode: run (default) or prepare (load "
-	"initial dataset)")
+	("mode", po::value<string>(&runMode)->default_value(""), "mode: run or prepare (load "
+	    "initial dataset)")
 	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(8), "working "
-	"threads (default: 8)")
+	    "threads (default: 8)")
 	("engine", po::value<string>()->default_value("InnoDB"), "set storage engine (default "
-	"InnoDB)")
+	    "InnoDB)")
 	("engine-extra", po::value<string>(), "extra storage engine options, e.g. "
-	"'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
+	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
 	;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help")) {
+    if (runMode.compare("") == 0) {
+        cout << "ERR: You must specify a run mode.\n";
+    }
+
+    if (vm.count("help") || runMode.compare("") == 0) {
         cout << desc << "\n";
         return 1;
     }
