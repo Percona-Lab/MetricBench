@@ -37,17 +37,19 @@ int main(int argc, const char **argv)
 	("mode", po::value<string>(&runMode)->default_value(""), "Mode - run or prepare (load "
 	    "initial dataset)")
         ("url",  po::value<string>(&Config::connHost)->default_value(Config::DEFAULT_HOST),
-            "Connection URL (e.g. tcp://[host[:port]], unix://path/socket_file) ")
+            "Connection URL, e.g. tcp://[host[:port]], unix://path/socket_file ")
         ("database", po::value<string>(&Config::connDb)->default_value(Config::DEFAULT_DB),
             "Connection Database (schema) to use")
         ("user", po::value<string>(&Config::connUser)->default_value(Config::DEFAULT_USER),
             "Connection User for login")
         ("password", po::value<string>(&Config::connPass)->default_value(Config::DEFAULT_PASS),
             "Connection Password for login")
-	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(8), "Working "
-	    "threads (default: 8)")
-	("engine", po::value<string>()->default_value("InnoDB"), "Set storage engine (default "
-	    "InnoDB)")
+        ("days", po::value<unsigned int>(&Config::LoadDays)->default_value(Config::DEFAULT_LOADDAYS),
+            "Days of traffic to simulate")
+	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(Config::DEFAULT_LOADERTHREADS),
+            "Working threads")
+	("engine", po::value<string>()->default_value(Config::DEFAULT_STORAGE_ENGINE),
+            "Set storage engine")
 	("engine-extra", po::value<string>(), "Extra storage engine options, e.g. "
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
 	;

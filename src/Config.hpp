@@ -15,6 +15,12 @@ namespace Config
     constexpr auto DEFAULT_USER = "root";
     constexpr auto DEFAULT_PASS = "";
 
+    constexpr unsigned int DEFAULT_LOADERTHREADS = 8;
+
+    constexpr unsigned int DEFAULT_LOADDAYS = 10;
+
+    constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
+
     extern std::string connDb;
     extern std::string connHost;
     extern std::string connUser;
@@ -28,7 +34,7 @@ namespace Config
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
 
-    constexpr unsigned int LoadDays = 10;
+    extern unsigned int LoadDays;
 
     extern unsigned int LoaderThreads;
 

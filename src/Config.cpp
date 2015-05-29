@@ -3,9 +3,11 @@
 
 namespace Config
 {
-    unsigned int LoaderThreads = 8;
+    unsigned int LoaderThreads = Config::DEFAULT_LOADERTHREADS;
 
-    std::string storageEngine = "InnoDB";
+    unsigned int LoadDays = Config::DEFAULT_LOADDAYS;
+
+    std::string storageEngine = Config::DEFAULT_STORAGE_ENGINE;
     std::string storageEngineExtra = "";
 
     std::string connDb = Config::DEFAULT_DB;
