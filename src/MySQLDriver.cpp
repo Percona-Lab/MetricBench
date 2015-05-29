@@ -1,4 +1,4 @@
-#include <thread>      
+#include <thread>
 #include <chrono>
 #include <atomic>
 
@@ -22,9 +22,9 @@ void MySQLDriver::Prep() {
 }
 
 void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
-        
-    sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
-    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
+
+    sql::Driver * driver = sql::mysql::get_driver_instance();
+    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
     con->setSchema(database);
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
@@ -38,8 +38,8 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 	    minTs = res->getUInt("mints");
 	    maxTs = res->getUInt("maxts");
 	    tsRange = maxTs - minTs;
-	    cout << "MinTS: "<< minTs 
-		<< ", MaxTS: " << maxTs 
+	    cout << "MinTS: "<< minTs
+		<< ", MaxTS: " << maxTs
 		<< ", Range: "<< (maxTs-minTs) << endl;
 	} else {
 	    throw std::runtime_error ("SELECT timestamp from metrics returns no result");
@@ -49,21 +49,21 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
     for (auto i = 0; i < Config::LoaderThreads; i++) {
 	    std::thread threadInsertData([this](){ InsertData(); });
 	    threadInsertData.detach();
-    } 
+    }
 
 }
 
 
 unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
-    
-    sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
-    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
+
+    sql::Driver * driver = sql::mysql::get_driver_instance();
+    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
     con->setSchema(database);
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
     unsigned int maxDevID = 0;
-    
+
     { /* block for ResultSet ptr */
         stringstream sql;
 	sql.str("");
@@ -73,7 +73,7 @@ unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
 
 	if (res->next()) {
 	    maxDevID = res->getUInt("maxdev");
-	} 
+	}
     }
 
     return maxDevID;
@@ -85,8 +85,8 @@ For a given timestamp it loads N devices, each reported M metrics */
 void MySQLDriver::InsertData() {
 
     cout << "InsertData thread started" << endl;
-    sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
-    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
+    sql::Driver * driver = sql::mysql::get_driver_instance();
+    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
 
     con->setSchema(database);
 
@@ -126,13 +126,13 @@ void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sq
 	    if (notfirst) {
 		sql << ",";
 	    }
-	    notfirst = true;	
+	    notfirst = true;
 	    auto v = PGen->GetNext(0.0, Config::MaxValue);
-	    sql << "(from_unixtime(" 
-		<< timestamp << "), " 
-		<< device_id << ", " 
-		<< mc << "," 
-		<< PGen->GetNext(Config::MaxCnt, 0) 
+	    sql << "(from_unixtime("
+		<< timestamp << "), "
+		<< device_id << ", "
+		<< mc << ","
+		<< PGen->GetNext(Config::MaxCnt, 0)
 		<< ", " << (v < 0.5 ? 0 : v)  << ")";
 
 	}
@@ -192,8 +192,8 @@ void MySQLDriver::DeleteQuery(unsigned int timestamp, unsigned int device_id, sq
 /* handle creation of DB schema */
 void MySQLDriver::CreateSchema() {
 
-    sql::Driver * driver = sql::mysql::get_driver_instance();                                                           
-    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));                                             
+    sql::Driver * driver = sql::mysql::get_driver_instance();
+    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
 
     con->setSchema(database);
 
