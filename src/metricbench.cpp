@@ -31,6 +31,7 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
 
+    // TODO: read these from response file
     po::options_description desc("Command line options");
     desc.add_options()
 	("help", "Help message")
