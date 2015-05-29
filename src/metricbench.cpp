@@ -30,7 +30,7 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
 
-    po::options_description desc("Command line options:");
+    po::options_description desc("Command line options");
     desc.add_options()
 	("help", "help message")
 	("mode", po::value<string>(&runMode)->default_value(""), "mode: run or prepare (load "
@@ -47,13 +47,15 @@ int main(int argc, const char **argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (runMode.compare("") == 0) {
-        cout << "ERR: You must specify a run mode.\n";
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        return EXIT_FAILURE;
     }
 
-    if (vm.count("help") || runMode.compare("") == 0) {
+    if (runMode.compare("") == 0) {
+        cout << "ERR: You must specify a run mode.\n\n";
         cout << desc << "\n";
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (vm.count("engine")) {
