@@ -1,7 +1,7 @@
 #include "Stats.hpp"
 
 #include <vector>
-#include <thread>      
+#include <thread>
 #include <chrono>
 #include <algorithm>
 
@@ -29,13 +29,13 @@ void Stats::statsPrint() {
 
 	lockCounts.lock();
 
-	
+
 	auto cnts = Counts[InsertMetric];
 
 	unsigned int biggest = 0;
 	unsigned int pct99 = 0;
 
-	if (cnts > 0) { 
+	if (cnts > 0) {
 	    pct99 = percentile(execTimes[InsertMetric], 0.99);
 	    auto tmp  = std::max_element(std::begin(execTimes[InsertMetric]),
 		std::end(execTimes[InsertMetric]));
@@ -44,8 +44,8 @@ void Stats::statsPrint() {
 
 	std::cout << std::fixed << std::setprecision(2)
 	    << "[Stats] Time: " << secFromStart << "sec, "
-	    << "InsertMetric: " << cnts 
-	    << ", max time(us): " << biggest 
+	    << "InsertMetric: " << cnts
+	    << ", max time(us): " << biggest
 	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size()
 	    << std::endl;
 
@@ -60,8 +60,8 @@ void Stats::statsPrint() {
 
 	    std::cout << std::fixed << std::setprecision(2)
 		<< "[Stats] Time: " << secFromStart << "sec, "
-		<< "DeleteDevice: " << cnts 
-		<< ", max time(us): " << biggest 
+		<< "DeleteDevice: " << cnts
+		<< ", max time(us): " << biggest
 		<< ", 99% time(us): " << pct99
 		<< std::endl;
 	}
@@ -70,7 +70,7 @@ void Stats::statsPrint() {
 	execTimes.clear();
 	lockCounts.unlock();
 
-	
+
 
     }
 
@@ -97,15 +97,15 @@ void Stats::Run() {
 	lockCounts.unlock();
 	/*
 	switch(sm.op) {
-	    case InsertMetric: 
+	    case InsertMetric:
 		lockCounts.lock();
 		Counts[InsertMetric] += sm.cnt;
 		insertTimes.push_back(sm.time_us);
 		lockCounts.unlock();
 
-//		std::cout << "[Stats] Recived count: " 
-//		    << sm.cnt << ", total: " 
-//		    << Counts[InsertMetric] 
+//		std::cout << "[Stats] Recived count: "
+//		    << sm.cnt << ", total: "
+//		    << Counts[InsertMetric]
 //		    << std::endl;
 		break;
 	}*/
