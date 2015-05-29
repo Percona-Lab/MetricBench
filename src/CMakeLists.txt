@@ -36,7 +36,7 @@ find_library(MYSQL_CLIENT
 message(STATUS ${MYSQL_CLIENT})
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS program_options system filesystem REQUIRED)
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 mark_as_advanced(MYSQLCONNECTORCPP_INCLUDE_DIR MYSQLCONNECTORCPP_LIBRARY)
