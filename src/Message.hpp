@@ -5,7 +5,7 @@ enum MessageType
     Insert, Delete, InsertMetric, DeleteDevice
 };
 
-class Message { 
+class Message {
 public:
 
     MessageType op = Insert;

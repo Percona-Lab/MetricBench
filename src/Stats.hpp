@@ -3,7 +3,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <iostream>
-#include <iomanip> 
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <mutex>
