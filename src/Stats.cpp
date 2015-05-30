@@ -44,7 +44,7 @@ void Stats::statsPrint() {
 
 	std::cout << std::fixed << std::setprecision(2)
 	    << "[Stats] Time: " << secFromStart << "sec, "
-	    << "InsertMetric: " << cnts
+	    << messageTypeLabel[InsertMetric] << ": " << cnts
 	    << ", max time(us): " << biggest
 	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size()
 	    << std::endl;
@@ -60,7 +60,7 @@ void Stats::statsPrint() {
 
 	    std::cout << std::fixed << std::setprecision(2)
 		<< "[Stats] Time: " << secFromStart << "sec, "
-		<< "DeleteDevice: " << cnts
+		<< messageTypeLabel[DeleteDevice] << ": " << cnts
 		<< ", max time(us): " << biggest
 		<< ", 99% time(us): " << pct99
 		<< std::endl;
@@ -69,8 +69,6 @@ void Stats::statsPrint() {
 	Counts.clear();
 	execTimes.clear();
 	lockCounts.unlock();
-
-
 
     }
 
