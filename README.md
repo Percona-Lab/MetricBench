@@ -10,7 +10,7 @@ A windowed time-series benchmark focused on capturing metrics from devices, proc
 * CMake / make
 * MySQL C Client headers and library
 * MySQL Connector C++ headers and library (static)
-* Boost system, filesystem and program options headers and libraries
+* Boost system, filesystem , program options and unit testing headers and libraries
 
 ### Build:
 
