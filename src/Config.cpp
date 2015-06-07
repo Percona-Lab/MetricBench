@@ -10,6 +10,8 @@ namespace Config
     std::string storageEngine = Config::DEFAULT_STORAGE_ENGINE;
     std::string storageEngineExtra = "";
 
+    std::string preCreateStatement = "";
+    
     std::string connDb = Config::DEFAULT_DB;
     std::string connHost = Config::DEFAULT_HOST;
     std::string connUser = Config::DEFAULT_USER;
