@@ -46,12 +46,13 @@ find_package_handle_standard_args(MysqlConnectorCpp
 	MYSQLCONNECTORCPP_INCLUDE_DIR
 	MYSQLCONNECTORCPP_LIBRARY)
 
+set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11")
+add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp Config.cpp Stats.cpp Message.cpp)
 set_target_properties(MetricBench PROPERTIES
-		LINK_FLAGS "-L/usr/local/lib/x86_64-linux-gnu/"
-		COMPILE_FLAGS "-std=c++11")
+		LINK_FLAGS "-L/usr/local/lib/x86_64-linux-gnu/")
 #target_link_libraries (MetricBench mysqlcppconn-static mysqlclient)
 target_link_libraries (MetricBench mysqlcppconn-static ${MYSQL_CLIENT} pthread m rt dl z
     ${Boost_LIBRARIES})
