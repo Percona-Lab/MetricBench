@@ -2,28 +2,30 @@ cmake_minimum_required (VERSION 2.6)
 project (MetricBench)
 
 set(MYSQLCONNECTORCPP_ROOT_DIR
-	"${MYSQLCONNECTORCPP_ROOT_DIR}"
-	CACHE
-	PATH
-	"Where to start looking for this component.")
+        "${MYSQLCONNECTORCPP_ROOT_DIR}"
+        CACHE
+        PATH
+        "Where to start looking for this component.")
 
-	find_path(MYSQLCONNECTORCPP_INCLUDE_DIR
-		mysql_connection.h
-		HINTS
-		${MYSQLCONNECTORCPP_ROOT_DIR}
-		PATH_SUFFIXES
-		include)
+find_path(MYSQLCONNECTORCPP_INCLUDE_DIR
+        mysql_connection.h
+        HINTS
+        ${MYSQLCONNECTORCPP_ROOT_DIR}
+        PATH_SUFFIXES
+        include)
 
-	find_library(MYSQLCONNECTORCPP_LIBRARY
-		NAMES
-		mysqlcppconn-static
-		HINTS
-		${MYSQLCONNECTORCPP_ROOT_DIR}
-		PATH_SUFFIXES
-		lib64
-                lib64/mysql
-		lib
-                lib/mysql)
+find_library(MYSQLCONNECTORCPP_LIBRARY
+        NAMES
+        mysqlcppconn-static
+        HINTS
+        ${MYSQLCONNECTORCPP_ROOT_DIR}
+        PATH_SUFFIXES
+        lib64
+        lib64/mysql
+        lib
+        lib/mysql)
+
+message(STATUS ${MYSQLCONNECTORCPP_LIBRARY})
 
 find_library(MYSQL_CLIENT
         NAMES
@@ -37,25 +39,33 @@ message(STATUS ${MYSQL_CLIENT})
 
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS program_options system filesystem)
-include_directories( ${Boost_INCLUDE_DIRS} )
+
+include_directories( ${Boost_INCLUDE_DIRS} ${MYSQLCONNECTORCPP_INCLUDE_DIR} )
 
 mark_as_advanced(MYSQLCONNECTORCPP_INCLUDE_DIR MYSQLCONNECTORCPP_LIBRARY)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MysqlConnectorCpp
-	DEFAULT_MSG
-	MYSQLCONNECTORCPP_INCLUDE_DIR
-	MYSQLCONNECTORCPP_LIBRARY)
+        DEFAULT_MSG
+        MYSQLCONNECTORCPP_INCLUDE_DIR
+        MYSQLCONNECTORCPP_LIBRARY)
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11")
+set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -pedantic -pthread")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(BUILD_SHARED_LIBRARIES OFF)
+set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp Config.cpp Stats.cpp Message.cpp)
 set_target_properties(MetricBench PROPERTIES
-		LINK_FLAGS "-L/usr/local/lib/x86_64-linux-gnu/")
+                LINK_FLAGS "-static -pthread -Wl,--no-as-needed")
+
+set(STATIC_PTHREAD "-Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
+
 #target_link_libraries (MetricBench mysqlcppconn-static mysqlclient)
-target_link_libraries (MetricBench mysqlcppconn-static ${MYSQL_CLIENT} pthread m rt dl z
-    ${Boost_LIBRARIES})
+target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT}
+  ${Boost_LIBRARIES} ${STATIC_PTHREAD} m rt dl z c)
 #    ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_QUEUE_LIBRARY})
 
 
@@ -79,15 +89,15 @@ foreach(testSrc ${TEST_SRCS})
 
         #link to Boost libraries AND your targets and dependencies
         target_link_libraries(${testName} ${Boost_LIBRARIES}
-            mysqlcppconn-static ${MYSQL_CLIENT} pthread m rt dl z )
+             ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT} pthread m rt dl z )
 
-        #I like to move testing binaries into a testBin directory
-        set_target_properties(${testName} PROPERTIES 
+       #I like to move testing binaries into a testBin directory
+        set_target_properties(${testName} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/testBin)
 
-        #Finally add it to test execution - 
+        #Finally add it to test execution -
         #Notice the WORKING_DIRECTORY and COMMAND
-        add_test(NAME ${testName} 
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/testBin 
+        add_test(NAME ${testName}
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/testBin
                  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/testBin/${testName} )
 endforeach(testSrc)
