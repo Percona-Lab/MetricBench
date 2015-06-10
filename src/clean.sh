@@ -5,7 +5,7 @@ cd `dirname $0`
 case $1 in
 
   all)
-    rm -rf CMakeCache.txt CMakeFiles/ Makefile MetricBench cmake_install.cmake .Makefile.swp
+    rm -rf CMakeCache.txt CMakeFiles/ Makefile MetricBench cmake_install.cmake .Makefile.swp testBin
     ;;
   bin*)
     find . -type f -exec file {} \; | grep ELF | cut -d':' -f1 | xargs rm
