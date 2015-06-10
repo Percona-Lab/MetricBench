@@ -53,6 +53,8 @@ int main(int argc, const char **argv)
             "Set storage engine")
 	("engine-extra", po::value<string>(), "Extra storage engine options, e.g. "
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
+        ("csvstats", po::value<string>(&Config::csvStatsFile), "CSV final summary stats file.")
+        ("csvstreams", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
 	;
 
     po::variables_map vm;
