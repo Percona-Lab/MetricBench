@@ -72,7 +72,7 @@ export MYSQLCONNECTORCPP_ROOT_DIR
 # download and build Metric Bench using exported roots of boost, mysqlcppconn
 
 cd ${BUILD_ROOT}
-git clone https://github.com/vadimtk/MetricBench.git
+git clone https://github.com/Percona-Lab/MetricBench.git
 cd MetricBench/src
 ./clean.sh all
 cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
