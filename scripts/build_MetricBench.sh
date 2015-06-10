@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# build MetricBench on Ubuntu 12.04
+# build MetricBench
+#
+# Currently supports Ubuntu 12 / 14
 
 # david.bennett at percona.com - 6/9/2015
 
@@ -35,10 +37,8 @@ apt-get install -y --force-yes \
 cd /usr/bin
 for CMD in cpp gcc g++; do
   [ -L ${CMD} ] && rm ${CMD}
+  ln -s ${CMD}-4.8 ${CMD}
 done 
-ln -s cpp-4.8 cpp
-ln -s gcc-4.8 gcc
-ln -s g++-4.8 g++
 
 # --- user section (does not require root) ---
 
@@ -47,7 +47,7 @@ ln -s g++-4.8 g++
 mkdir ${BUILD_ROOT}
 cd ${BUILD_ROOT}
 wget -q -O - \
-        http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
+        http://sf.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
         | tar xzvf -
 cd boost_1_58_0
 BOOST_ROOT=${BUILD_ROOT}/MetricBench_boost
