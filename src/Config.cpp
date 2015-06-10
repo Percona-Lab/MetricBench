@@ -16,4 +16,7 @@ namespace Config
     std::string connPass = Config::DEFAULT_PASS;
 
     RunModeE runMode = RUN;
+
+    std::string csvStatsFile = "";
+    std::string csvStreamingStatsFile = "";
 }

@@ -43,4 +43,7 @@ namespace Config
     extern std::string storageEngineExtra;
 
     extern RunModeE runMode;
+
+    extern std::string csvStatsFile;
+    extern std::string csvStreamingStatsFile;
 }
