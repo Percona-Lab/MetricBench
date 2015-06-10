@@ -13,9 +13,15 @@ BUILD_ROOT=${HOME}/build
 # install package dependencies for building
 
 apt-get update
-apt-get install -y --force-yes python-software-properties
-add-apt-repository -y ppa:ubuntu-toolchain-r/test
-apt-get update
+
+HAS_GPP_48=$(apt-cache search 'g\+\+-4\.8' | head -n1 | awk '{print $1}')
+
+if [ -z "${HAS_GPP_48}" ]; then
+  apt-get install -y --force-yes python-software-properties
+  add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  apt-get update
+fi
+
 apt-get install -y --force-yes \
   vim \
   bzr git wget \
@@ -41,14 +47,14 @@ ln -s g++-4.8 g++
 mkdir ${BUILD_ROOT}
 cd ${BUILD_ROOT}
 wget -q -O - \
-	http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
-	| tar xzvf -
+        http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
+        | tar xzvf -
 cd boost_1_58_0
 BOOST_ROOT=${BUILD_ROOT}/MetricBench_boost
 mkdir -p ${BOOST_ROOT}
 ./bootstrap.sh --prefix=${BOOST_ROOT} \
-	--libdir=${BOOST_ROOT}/lib --includedir=${BOOST_ROOT}/include \
-	--with-libraries=program_options,filesystem,system,test
+        --libdir=${BOOST_ROOT}/lib --includedir=${BOOST_ROOT}/include \
+        --with-libraries=program_options,filesystem,system,test
 ./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
 export BOOST_ROOT
 
