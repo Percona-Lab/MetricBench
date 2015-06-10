@@ -23,7 +23,8 @@ find_library(MYSQLCONNECTORCPP_LIBRARY
         lib64
         lib64/mysql
         lib
-        lib/mysql)
+        lib/mysql
+        lib/x86_64-linux-gnu)
 
 message(STATUS ${MYSQLCONNECTORCPP_LIBRARY})
 
@@ -49,7 +50,7 @@ find_package_handle_standard_args(MysqlConnectorCpp
         MYSQLCONNECTORCPP_INCLUDE_DIR
         MYSQLCONNECTORCPP_LIBRARY)
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -pedantic -pthread")
+set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -59,13 +60,10 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp Config.cpp Stats.cpp Message.cpp)
 set_target_properties(MetricBench PROPERTIES
-                LINK_FLAGS "-static -pthread -Wl,--no-as-needed")
-
-set(STATIC_PTHREAD "-Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
-
+                LINK_FLAGS "-static")
 #target_link_libraries (MetricBench mysqlcppconn-static mysqlclient)
 target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT}
-  ${Boost_LIBRARIES} ${STATIC_PTHREAD} m rt dl z c)
+  ${Boost_LIBRARIES} pthread m rt dl z c)
 #    ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_QUEUE_LIBRARY})
 
 
