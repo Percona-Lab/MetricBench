@@ -53,8 +53,12 @@ int main(int argc, const char **argv)
             "Set storage engine")
 	("engine-extra", po::value<string>(), "Extra storage engine options, e.g. "
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
+
         ("csvstats", po::value<string>(&Config::csvStatsFile), "CSV final summary stats file.")
         ("csvstreams", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
+
+        ("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
+	    "'SET tokudb_read_block_size=32K'")
 	;
 
     po::variables_map vm;
@@ -86,6 +90,11 @@ int main(int argc, const char **argv)
 	cout << "Using Storage engine extra options: "
 	    << vm["engine-extra"].as<string>() << endl;
 	Config::storageEngineExtra = vm["engine-extra"].as<string>();
+    }
+    if (vm.count("pre-create")) {
+	cout << "Using pre-create statement: "
+	    << vm["pre-create"].as<string>() << endl;
+	Config::preCreateStatement = vm["pre-create"].as<string>();
     }
 
     string url(Config::connHost);

@@ -41,6 +41,7 @@ namespace Config
 
     extern std::string storageEngine;
     extern std::string storageEngineExtra;
+    extern std::string preCreateStatement;
 
     extern RunModeE runMode;
 
