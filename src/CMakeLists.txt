@@ -23,7 +23,8 @@ find_library(MYSQLCONNECTORCPP_LIBRARY
         lib64
         lib64/mysql
         lib
-        lib/mysql)
+        lib/mysql
+        lib/x86_64-linux-gnu)
 
 message(STATUS ${MYSQLCONNECTORCPP_LIBRARY})
 
