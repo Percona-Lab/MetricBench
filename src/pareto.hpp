@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <stdexcept>
 
 /* based on an article "Power laws, Pareto distributions and Zipf's law" M. E. J. Newman */
 /* pareto_h = 1.16096 corresponds to 80-20 rule
