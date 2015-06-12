@@ -102,61 +102,60 @@ int main(int argc, const char **argv)
     const string pass(Config::connPass);
     const string database(Config::connDb);
 
-
     /* prepare routine */
 
-	ParetoGenerator PG(1.04795);
+    ParetoGenerator PG(1.04795);
 
-	MySQLDriver MLP(user, pass, database, url);
-	MLP.SetGenerator(&PG);
+    MySQLDriver MLP(user, pass, database, url);
+    MLP.SetGenerator(&PG);
 
-	Preparer Runner(MLP);
-	Runner.SetGenerator(&PG);
+    Preparer Runner(MLP);
+    Runner.SetGenerator(&PG);
 
-	Stats st;
+    Stats st;
 
-	std::thread threadStats(&Stats::Run, &st);
-	threadStats.detach();
+    std::thread threadStats(&Stats::Run, &st);
+    threadStats.detach();
 
-	if (runMode == "prepare") {
-	    cout << "PREPARE mode" << endl;
-	    Config::runMode = PREPARE;
-	    try {
+    if (runMode == "prepare") {
+        cout << "PREPARE mode" << endl;
+        Config::runMode = PREPARE;
+        try {
 
-		Runner.Prep();
+            Runner.Prep();
 
-		cout << "# done!" << endl;
+            cout << "# done!" << endl;
 
-	    } catch (std::runtime_error &e) {
+        } catch (std::runtime_error &e) {
 
-		cout << "# ERR: runtime_error in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what() << endl;
+            cout << "# ERR: runtime_error in " << __FILE__;
+            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+            cout << "# ERR: " << e.what() << endl;
 
-		return EXIT_FAILURE;
-	    }
-	    return EXIT_SUCCESS;
-	}
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
 
-	if (runMode == "run") {
-	    cout << "RUN mode" << endl;
-	    Config::runMode = RUN;
-	    try {
+    if (runMode == "run") {
+        cout << "RUN mode" << endl;
+        Config::runMode = RUN;
+        try {
 
-		Runner.Run();
+            Runner.Run();
 
-		cout << "# done!" << endl;
+            cout << "# done!" << endl;
 
-	    } catch (std::runtime_error &e) {
+        } catch (std::runtime_error &e) {
 
-		cout << "# ERR: runtime_error in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what() << endl;
+            cout << "# ERR: runtime_error in " << __FILE__;
+            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+            cout << "# ERR: " << e.what() << endl;
 
-		return EXIT_FAILURE;
-	    }
-	    return EXIT_SUCCESS;
-	}
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
