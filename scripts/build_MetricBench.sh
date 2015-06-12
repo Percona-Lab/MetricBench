@@ -8,6 +8,7 @@
 
 # Note: you will need to run as root for the first section
 
+BUILD_STATIC=0
 BUILD_ROOT=${HOME}/build
 
 # --- root section ---
@@ -55,7 +56,11 @@ mkdir -p ${BOOST_ROOT}
 ./bootstrap.sh --prefix=${BOOST_ROOT} \
         --libdir=${BOOST_ROOT}/lib --includedir=${BOOST_ROOT}/include \
         --with-libraries=program_options,filesystem,system,test
-./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
+if [ "${BUILD_STATIC}" -gt 0 ]; then
+  ./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
+else
+  ./b2 --build-type=complete --layout=tagged link=shared install | tee b2.out
+fi
 export BOOST_ROOT
 
 # MySQL Connector C++ - 1.1.5
@@ -75,7 +80,11 @@ cd ${BUILD_ROOT}
 git clone https://github.com/Percona-Lab/MetricBench.git
 cd MetricBench/src
 ./clean.sh all
-cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+if [ "${BUILD_STATIC}" -gt 0 ]; then
+  cmake -DBUILD_STATIC=1 -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+else
+  cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+fi
 make
 
 # Epilogue 
