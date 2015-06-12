@@ -119,7 +119,8 @@ foreach(testSrc ${TEST_SRCS})
         get_filename_component(testName ${testSrc} NAME_WE)
 
         #Add compile target
-        add_executable(${testName} ${testSrc} Message.cpp)
+        add_executable(${testName} ${testSrc} Message.cpp LatencyStats.cpp
+          RunningMean.cpp)
 
         #link to Boost libraries AND your targets and dependencies
         target_link_libraries(${testName} ${Boost_LIBRARIES}
