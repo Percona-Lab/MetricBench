@@ -1,6 +1,15 @@
 #!/bin/bash
 
-# build MetricBench
+# build MetricBench on a barebones Ubuntu 12/14 
+# this script does everything, installs toolchain
+# and dependencies, downloads and builds
+# MySQL Connector C++ and Boost
+# and downloads and builds MetricBench.
+# You can run this on a clean docker or vagrant image
+# of Ubuntu 12/14 x86_64
+#
+# If you are building somewhere else or just need part
+# of this script it should be easy as pie to copy & paste
 #
 # Currently supports Ubuntu 12 / 14
 
