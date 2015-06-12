@@ -1,10 +1,7 @@
-#include <algorithm>
-#include <cstddef>
-
 #include "LatencyStats.hpp"
 
 /**
- * Ported from the LinkBench LatencyStats class
+ * Ported to C++ from the LinkBench LatencyStats.java
  *
  * david.bennett at percona.com - June 2015
  *
@@ -57,7 +54,7 @@ int32_t LatencyStats::latencyToBucket(int64_t microTime)
 
 /**
  *
- * @param bucket
+ * @param[bucket] The bucket to compute the bounds for
  * @return inclusive min and exclusive max time in microsecs for bucket
  */
 LatencyStats::MinMaxMS LatencyStats::bucketBound(int32_t bucket)
@@ -106,18 +103,52 @@ void LatencyStats::recordLatency(int32_t threadid, MessageType type, int64_t mic
   }
 }
 
-// TODO: displayLatencyStats
-//
-// TODO: printCSVStats
-//
-// TODO: printCSVStats(...)
+/**
+ * Print out percentile values
+ */
+void LatencyStats::displayLatencyStats()
+{
+  char buf[128]; // big elbow
+  char fmt[]="%.3f";
+  calcMeans();
+  calcCumulativeBuckets();
 
+  for (int type; type < MAX_OPTYPES; type++) {
+    if (sampleCounts[type] == 0) {
+      continue;
+    }
+    MessageType msg=static_cast<MessageType>(type);
+
+    std::cout << messageTypeLabel[type] <<
+      " count = " << sampleCounts[type] << " " <<
+      " p25 = " << percentileString(msg, 25) << "ms " <<
+      " p50 = " << percentileString(msg, 50) << "ms " <<
+      " p75 = " << percentileString(msg, 75) << "ms " <<
+      " p95 = " << percentileString(msg, 95) << "ms " <<
+      " p99 = " << percentileString(msg, 99) << "ms ";
+
+      sprintf(buf, fmt, getMax(msg));
+      std::cout << " max = " << buf << "ms ";
+
+      sprintf(buf, fmt, getMean(msg));
+      std::cout << " mean = " << buf << "ms\n";
+  }
+}
+
+/**
+ * Print latency statistics for all of the operation types to a CSV file
+ * (see LatencyStats.hpp) for function template)
+ */
+void LatencyStats::printCSVStats(std::ostream &out, bool header) {
+  boost::array<MessageType, MAX_OPTYPES> ops;
+  for (int i; i < MAX_OPTYPES; i++) {
+    ops[i]=static_cast<MessageType>(i);
+  }
+  printCSVStats(out, header, ops);
+}
 
 void LatencyStats::calcMeans()
 {
-  boost::array<int64_t, MAX_OPTYPES> sampleCounts={};
-  boost::array<double, MAX_OPTYPES> finalMeans={};
-
   for (int i = 0; i < MAX_OPTYPES; i++) {
     int64_t samples = 0;
     for (int thread = 0; i < maxThreads; thread++) {
@@ -144,4 +175,75 @@ void LatencyStats::calcCumulativeBuckets()
 {
   std::fill( bucketCountsCumulative.origin(),
              bucketCountsCumulative.origin() + bucketCountsCumulative.size(), 0);
+  for (int type = 0; type < MAX_OPTYPES; type++) {
+    int64_t count = 0;
+    for (int bucket = 0; bucket < NUM_BUCKETS; bucket++) {
+      for (int thread = 0; thread < maxThreads; thread++) {
+        count += bucketCounts[thread][type][bucket];
+      }
+      bucketCountsCumulative[type][bucket] = count;
+    }
+  }
 }
+
+/**
+ * Get the minumum and maximum time for an operation type
+ */
+LatencyStats::MinMaxMS LatencyStats::getBucketBounds(MessageType type, int64_t percentile) {
+  auto n = sampleCounts[type];
+  //neededRank is the rank of the sample at the desired percentile
+  auto neededRank = static_cast<int64_t> (( percentile / 100.0 ) * n );
+  int bucketNum = -1;
+  for (int i = 0; i < NUM_BUCKETS; i++) {
+    auto rank = bucketCountsCumulative[type][i];
+    if(neededRank <= rank) {
+      bucketNum = i;
+      break;
+    }
+  }
+  assert(bucketNum >= 0); // should be found
+  return LatencyStats::bucketBound(bucketNum);
+}
+
+/**
+ * @return A human-readable string for the bucket bounds
+ */
+std::string LatencyStats::percentileString(MessageType type, int64_t percentile)
+{
+  return boundsToString(getBucketBounds(type, percentile));
+}
+
+
+std::string LatencyStats::boundsToString(LatencyStats::MinMaxMS bucketBounds)
+{
+  char buff[128]; // defined paranoically
+  char fmt[]="%.2f";
+
+  double minMs = bucketBounds[0] / 1000.0;
+  double maxMs = bucketBounds[1] / 1000.0;
+
+  std::ostringstream outstr;
+
+  sprintf(buff, fmt, minMs);
+  outstr << "[" << buff << ",";
+
+  sprintf(buff, fmt, maxMs);
+  outstr << buff << "]";
+
+  return outstr.str();
+}
+
+double LatencyStats::getMean(MessageType type)
+{
+  return finalMeans[type];
+}
+
+double LatencyStats::getMax(MessageType type)
+{
+  int64_t max_us = 0;
+  for (int thread = 0; thread < maxThreads; thread++) {
+    max_us = std::max(max_us,maxLatency[thread][type]);
+  }
+  return max_us / 1000.0;
+}
+
