@@ -23,7 +23,7 @@ LatencyStats::LatencyStats(int maxThreads) :
   bucketCountsCumulative(boost::extents[MAX_OPTYPES][NUM_BUCKETS])
 {
   // initialize our arrays
-  std::fill( means.origin(), means.origin() + means.size(),(RunningMean *)NULL);
+  std::fill( means.origin(), means.origin() + means.size(),(RunningMean *)nullptr);
   std::fill( bucketCounts.origin(), bucketCounts.origin() + bucketCounts.size(), 0);
   std::fill( maxLatency.origin(), maxLatency.origin() + maxLatency.size(), 0);
 }
@@ -93,7 +93,7 @@ void LatencyStats::recordLatency(int32_t threadid, MessageType type, int64_t mic
   opBuckets[bucket]++;
 
   auto time_ms = microtimetaken / 1000.0;
-  if (means[threadid][type] == (RunningMean *)NULL) {
+  if (means[threadid][type] == (RunningMean *)nullptr) {
     means[threadid][type] = new RunningMean(time_ms);
   } else {
     means[threadid][type]->addSample(time_ms);
@@ -113,7 +113,7 @@ void LatencyStats::displayLatencyStats()
   calcMeans();
   calcCumulativeBuckets();
 
-  for (int type; type < MAX_OPTYPES; type++) {
+  for (int type = 0; type < MAX_OPTYPES; type++) {
     if (sampleCounts[type] == 0) {
       continue;
     }
@@ -151,15 +151,15 @@ void LatencyStats::calcMeans()
 {
   for (int i = 0; i < MAX_OPTYPES; i++) {
     int64_t samples = 0;
-    for (int thread = 0; i < maxThreads; thread++) {
-      if (means[thread][i] != (RunningMean *)NULL) {
+    for (int thread = 0; thread < maxThreads; thread++) {
+      if (means[thread][i] != (RunningMean *)nullptr) {
         samples += means[thread][i]->samples();
       }
     }
     sampleCounts[i] = samples;
     double weightedMean = 0.0;
     for (int32_t thread = 0; thread < maxThreads; thread++) {
-      if (means[thread][i] != (RunningMean *)NULL) {
+      if (means[thread][i] != (RunningMean *)nullptr) {
         weightedMean += (means[thread][i]->samples() / static_cast< double >(samples)) *
           means[thread][i]->mean();
       }
@@ -201,7 +201,7 @@ LatencyStats::MinMaxMS LatencyStats::getBucketBounds(MessageType type, int64_t p
       break;
     }
   }
-  assert(bucketNum >= 0); // should be found
+  //assert(bucketNum >= 0); // should be found
   return LatencyStats::bucketBound(bucketNum);
 }
 
