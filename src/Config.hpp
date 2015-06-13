@@ -44,4 +44,7 @@ namespace Config
     extern std::string preCreateStatement;
 
     extern RunModeE runMode;
+
+    extern std::string csvStatsFile;
+    extern std::string csvStreamingStatsFile;
 }

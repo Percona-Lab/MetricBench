@@ -128,3 +128,8 @@ void Preparer::Run(){
     threadReporter.join();
 }
 
+void Preparer::setLatencyStats(LatencyStats* ls)
+{
+  latencyStats=ls;
+}
+

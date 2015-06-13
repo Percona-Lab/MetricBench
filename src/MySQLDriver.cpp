@@ -15,8 +15,8 @@ extern tsqueue<StatMessage> statQueue;
 using namespace std;
 
 void MySQLDriver::Prep() {
-    for (auto i = 0; i < Config::LoaderThreads; i++) {
-        std::thread threadInsertData([this](){ InsertData(); });
+    for (int i = 0; i < Config::LoaderThreads; i++) {
+        std::thread threadInsertData([this,i](){ InsertData(i); });
 	threadInsertData.detach();
     }
 }
@@ -46,8 +46,8 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 	}
     }
 
-    for (auto i = 0; i < Config::LoaderThreads; i++) {
-	    std::thread threadInsertData([this](){ InsertData(); });
+    for (int i = 0; i < Config::LoaderThreads; i++) {
+	    std::thread threadInsertData([this,i](){ InsertData(i); });
 	    threadInsertData.detach();
     }
 
@@ -82,7 +82,7 @@ unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
 
 /* This thread waits for a signal to handle timestamp event.
 For a given timestamp it loads N devices, each reported M metrics */
-void MySQLDriver::InsertData() {
+void MySQLDriver::InsertData(int threadId) {
 
     cout << "InsertData thread started" << endl;
     sql::Driver * driver = sql::mysql::get_driver_instance();
@@ -99,9 +99,9 @@ void MySQLDriver::InsertData() {
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Insert: InsertQuery(m.ts, m.device_id, *stmt);
+	    case Insert: InsertQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
-	    case Delete: DeleteQuery(m.ts, m.device_id, *stmt);
+	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
 	}
 
@@ -110,7 +110,7 @@ void MySQLDriver::InsertData() {
 }
 
 
-void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
+void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
 
     stringstream sql;
 
@@ -144,6 +144,10 @@ void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sq
 	auto t1 = std::chrono::high_resolution_clock::now();
 	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
 
+        if (latencyStats) {
+          latencyStats->recordLatency(threadId, InsertMetric, time_us);
+        }
+
 	StatMessage sm(InsertMetric, time_us, metricsCnt);
 	statQueue.push(sm);
 
@@ -158,7 +162,7 @@ void MySQLDriver::InsertQuery(unsigned int timestamp, unsigned int device_id, sq
 
 }
 
-void MySQLDriver::DeleteQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
+void MySQLDriver::DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
 
     stringstream sql;
 
@@ -174,6 +178,10 @@ void MySQLDriver::DeleteQuery(unsigned int timestamp, unsigned int device_id, sq
 	stmt.execute("COMMIT");
 	auto t1 = std::chrono::high_resolution_clock::now();
 	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+
+        if (latencyStats) {
+          latencyStats->recordLatency(threadId, DeleteDevice, time_us);
+        }
 
 	StatMessage sm(DeleteDevice, time_us, 1);
 	statQueue.push(sm);
@@ -227,3 +235,6 @@ void MySQLDriver::CreateSchema() {
     cout << "#\t Schema created" << endl;
 }
 
+void MySQLDriver::setLatencyStats(LatencyStats* ls) {
+  this->latencyStats = ls;
+}

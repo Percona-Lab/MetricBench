@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
@@ -9,6 +10,7 @@
 
 #include "MySQLDriver.hpp"
 #include "Config.hpp"
+#include "LatencyStats.hpp"
 
 /* General class to handle benchmark, not DB specific */
 class Preparer {
@@ -16,6 +18,7 @@ class Preparer {
     std::atomic<unsigned int> insertProgress {0};
     std::atomic<bool> progressLoad {true};
     ParetoGenerator* PGen;
+    LatencyStats* latencyStats=(LatencyStats *)nullptr;
 
 public:
     Preparer(MySQLDriver &ML) :DataLoader(ML) {}
@@ -24,6 +27,8 @@ public:
     void Prep();
     /* Run benchmark itself */
     void Run();
+    /* Pass the LatencyStats object to us */
+    void setLatencyStats(LatencyStats * ls);
 private:
     /* periodical print of prepare progress */
     void prepProgressPrint(unsigned int startTs, unsigned int total) const;

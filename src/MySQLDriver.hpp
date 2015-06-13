@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
@@ -21,6 +22,7 @@
 
 #include "pareto.hpp"
 #include "Config.hpp"
+#include "LatencyStats.hpp"
 
 using namespace std;
 
@@ -30,6 +32,7 @@ class MySQLDriver {
     const string database;
     const string url;
     ParetoGenerator* PGen;
+    LatencyStats* latencyStats;
 
     /* range between first and last records in metrics */
     unsigned int tsRange;
@@ -41,7 +44,8 @@ public:
 	    const string url) :user(user),
 		    pass(pass),
 		    database(database),
-		    url(url) {}
+		    url(url),
+                    latencyStats((LatencyStats *)nullptr) {}
     void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
     void Prep();
     void Run(unsigned int& minTs, unsigned int& maxTs);
@@ -50,8 +54,10 @@ public:
     /* return max device_id available for given ts */
     unsigned int getMaxDevIdForTS(unsigned int ts);
 
+    void setLatencyStats(LatencyStats* ls);
+
 private:
-    void InsertData();
-    void InsertQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
-    void DeleteQuery(unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
+    void InsertData(int threadId);
+    void InsertQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
+    void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
 };

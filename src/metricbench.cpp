@@ -16,6 +16,7 @@
 #include "Preparer.hpp"
 #include "Message.hpp"
 #include "Stats.hpp"
+#include "LatencyStats.hpp"
 
 using namespace std;
 
@@ -53,7 +54,11 @@ int main(int argc, const char **argv)
             "Set storage engine")
 	("engine-extra", po::value<string>(), "Extra storage engine options, e.g. "
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
-	("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
+
+        ("csvstats", po::value<string>(&Config::csvStatsFile), "CSV final summary stats file.")
+        ("csvstreams", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
+
+        ("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
 	    "'SET tokudb_read_block_size=32K'")
 	;
 
@@ -88,7 +93,7 @@ int main(int argc, const char **argv)
 	Config::storageEngineExtra = vm["engine-extra"].as<string>();
     }
     if (vm.count("pre-create")) {
-	cout << "Using pre-create statement: " 
+	cout << "Using pre-create statement: "
 	    << vm["pre-create"].as<string>() << endl;
 	Config::preCreateStatement = vm["pre-create"].as<string>();
     }
@@ -98,61 +103,71 @@ int main(int argc, const char **argv)
     const string pass(Config::connPass);
     const string database(Config::connDb);
 
+    LatencyStats latencyStats(Config::LoaderThreads);
 
     /* prepare routine */
 
-	ParetoGenerator PG(1.04795);
+    ParetoGenerator PG(1.04795);
 
-	MySQLDriver MLP(user, pass, database, url);
-	MLP.SetGenerator(&PG);
+    MySQLDriver MLP(user, pass, database, url);
+    MLP.SetGenerator(&PG);
+    MLP.setLatencyStats(&latencyStats);
 
-	Preparer Runner(MLP);
-	Runner.SetGenerator(&PG);
+    Preparer Runner(MLP);
+    Runner.SetGenerator(&PG);
 
-	Stats st;
+    Stats st;
 
-	std::thread threadStats(&Stats::Run, &st);
-	threadStats.detach();
+    std::thread threadStats(&Stats::Run, &st);
+    threadStats.detach();
 
-	if (runMode == "prepare") {
-	    cout << "PREPARE mode" << endl;
-	    Config::runMode = PREPARE;
-	    try {
+    if (runMode == "prepare") {
+        cout << "PREPARE mode" << endl;
+        Config::runMode = PREPARE;
+        try {
 
-		Runner.Prep();
+            Runner.Prep();
 
-		cout << "# done!" << endl;
+            cout << "# done!" << endl;
 
-	    } catch (std::runtime_error &e) {
+        } catch (std::runtime_error &e) {
 
-		cout << "# ERR: runtime_error in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what() << endl;
+            cout << "# ERR: runtime_error in " << __FILE__;
+            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+            cout << "# ERR: " << e.what() << endl;
 
-		return EXIT_FAILURE;
-	    }
-	    return EXIT_SUCCESS;
-	}
+            return EXIT_FAILURE;
+        }
 
-	if (runMode == "run") {
-	    cout << "RUN mode" << endl;
-	    Config::runMode = RUN;
-	    try {
+        // print latency statistics
+        latencyStats.displayLatencyStats();
 
-		Runner.Run();
+        return EXIT_SUCCESS;
+    }
 
-		cout << "# done!" << endl;
+    if (runMode == "run") {
+        cout << "RUN mode" << endl;
+        Config::runMode = RUN;
+        try {
 
-	    } catch (std::runtime_error &e) {
+            Runner.Run();
 
-		cout << "# ERR: runtime_error in " << __FILE__;
-		cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-		cout << "# ERR: " << e.what() << endl;
+            cout << "# done!" << endl;
 
-		return EXIT_FAILURE;
-	    }
-	    return EXIT_SUCCESS;
-	}
+        } catch (std::runtime_error &e) {
 
-	return EXIT_SUCCESS;
+            cout << "# ERR: runtime_error in " << __FILE__;
+            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+            cout << "# ERR: " << e.what() << endl;
+
+            return EXIT_FAILURE;
+        }
+
+        // print latency statistics
+        latencyStats.displayLatencyStats();
+
+        return EXIT_SUCCESS;
+    }
+
+    return EXIT_SUCCESS;
 }

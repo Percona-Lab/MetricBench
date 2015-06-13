@@ -1,11 +1,23 @@
 #!/bin/bash
 
-# build MetricBench on Ubuntu 12.04
+# build MetricBench on a barebones Ubuntu 12/14 
+# this script does everything, installs toolchain
+# and dependencies, downloads and builds
+# MySQL Connector C++ and Boost
+# and downloads and builds MetricBench.
+# You can run this on a clean docker or vagrant image
+# of Ubuntu 12/14 x86_64
+#
+# If you are building somewhere else or just need part
+# of this script it should be easy as pie to copy & paste
+#
+# Currently supports Ubuntu 12 / 14
 
 # david.bennett at percona.com - 6/9/2015
 
 # Note: you will need to run as root for the first section
 
+BUILD_STATIC=0
 BUILD_ROOT=${HOME}/build
 
 # --- root section ---
@@ -35,10 +47,8 @@ apt-get install -y --force-yes \
 cd /usr/bin
 for CMD in cpp gcc g++; do
   [ -L ${CMD} ] && rm ${CMD}
+  ln -s ${CMD}-4.8 ${CMD}
 done 
-ln -s cpp-4.8 cpp
-ln -s gcc-4.8 gcc
-ln -s g++-4.8 g++
 
 # --- user section (does not require root) ---
 
@@ -47,7 +57,7 @@ ln -s g++-4.8 g++
 mkdir ${BUILD_ROOT}
 cd ${BUILD_ROOT}
 wget -q -O - \
-        http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
+        http://sf.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz/download \
         | tar xzvf -
 cd boost_1_58_0
 BOOST_ROOT=${BUILD_ROOT}/MetricBench_boost
@@ -55,7 +65,11 @@ mkdir -p ${BOOST_ROOT}
 ./bootstrap.sh --prefix=${BOOST_ROOT} \
         --libdir=${BOOST_ROOT}/lib --includedir=${BOOST_ROOT}/include \
         --with-libraries=program_options,filesystem,system,test
-./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
+if [ "${BUILD_STATIC}" -gt 0 ]; then
+  ./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
+else
+  ./b2 --build-type=complete --layout=tagged link=shared install | tee b2.out
+fi
 export BOOST_ROOT
 
 # MySQL Connector C++ - 1.1.5
@@ -75,7 +89,11 @@ cd ${BUILD_ROOT}
 git clone https://github.com/Percona-Lab/MetricBench.git
 cd MetricBench/src
 ./clean.sh all
-cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+if [ "${BUILD_STATIC}" -gt 0 ]; then
+  cmake -DBUILD_STATIC=1 -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+else
+  cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+fi
 make
 
 # Epilogue 
