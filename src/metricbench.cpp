@@ -16,6 +16,7 @@
 #include "Preparer.hpp"
 #include "Message.hpp"
 #include "Stats.hpp"
+#include "LatencyStats.hpp"
 
 using namespace std;
 
@@ -102,12 +103,15 @@ int main(int argc, const char **argv)
     const string pass(Config::connPass);
     const string database(Config::connDb);
 
+    LatencyStats latencyStats(Config::LoaderThreads);
+
     /* prepare routine */
 
     ParetoGenerator PG(1.04795);
 
     MySQLDriver MLP(user, pass, database, url);
     MLP.SetGenerator(&PG);
+    MLP.setLatencyStats(&latencyStats);
 
     Preparer Runner(MLP);
     Runner.SetGenerator(&PG);
@@ -134,6 +138,10 @@ int main(int argc, const char **argv)
 
             return EXIT_FAILURE;
         }
+
+        // print latency statistics
+        latencyStats.displayLatencyStats();
+
         return EXIT_SUCCESS;
     }
 
@@ -154,6 +162,10 @@ int main(int argc, const char **argv)
 
             return EXIT_FAILURE;
         }
+
+        // print latency statistics
+        latencyStats.displayLatencyStats();
+
         return EXIT_SUCCESS;
     }
 
