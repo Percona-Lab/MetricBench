@@ -32,7 +32,7 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
     { /* block for ResultSet ptr */
 	std::unique_ptr< sql::ResultSet >
 	    res(stmt->executeQuery("SELECT "
-			"unix_timestamp(min(period)) mints,unix_timestamp(max(period)) maxts FROM metrics"));
+			"unix_timestamp(min(ts)) mints,unix_timestamp(max(ts)) maxts FROM metrics"));
 
 	if (res->next()) {
 	    minTs = res->getUInt("mints");
@@ -68,7 +68,7 @@ unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
         stringstream sql;
 	sql.str("");
 	sql << "SELECT max(device_id) maxdev FROM metrics "
-	    << "WHERE period=from_unixtime(" << ts << ")";
+	    << "WHERE ts=from_unixtime(" << ts << ")";
 	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
 
 	if (res->next()) {
@@ -99,7 +99,7 @@ void MySQLDriver::InsertData(int threadId) {
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Insert: InsertQuery(threadId, m.ts, m.device_id, *stmt);
+	    case Insert: InsertQuery(threadId, m.ts, m.org_id, m.device_id, *stmt);
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
@@ -110,7 +110,7 @@ void MySQLDriver::InsertData(int threadId) {
 }
 
 
-void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt) {
+void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int org_id, unsigned int device_id, sql::Statement & stmt) {
 
     stringstream sql;
 
@@ -118,7 +118,7 @@ void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int
 	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
 
 	sql.str("");
-	sql << "INSERT INTO metrics(period, device_id, metric_id, cnt, val ) VALUES ";
+	sql << "INSERT INTO metrics(ts, org_id, device_id, metric_id, cnt, val ) VALUES ";
 	bool notfirst = false;
 
 	/* metrics loop */
@@ -130,6 +130,7 @@ void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int
 	    auto v = PGen->GetNext(0.0, Config::MaxValue);
 	    sql << "(from_unixtime("
 		<< timestamp << "), "
+		<< org_id << ", "
 		<< device_id << ", "
 		<< mc << ","
 		<< PGen->GetNext(Config::MaxCnt, 0)
@@ -169,7 +170,7 @@ void MySQLDriver::DeleteQuery(int threadId, unsigned int timestamp, unsigned int
     try {
 
 	sql.str("");
-	sql << "DELETE FROM metrics WHERE period=from_unixtime(" << timestamp << ")"
+	sql << "DELETE FROM metrics WHERE ts=from_unixtime(" << timestamp << ")"
 	    << " AND device_id=" << device_id;
 
 	auto t0 = std::chrono::high_resolution_clock::now();
@@ -214,14 +215,16 @@ void MySQLDriver::CreateSchema() {
 	    stmt->execute(Config::preCreateStatement);
 	stmt->execute(R"(
 	    CREATE TABLE metrics (
-		    period timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+		    ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+			org_id int(10) unsigned NOT NULL,
 		    device_id int(10) unsigned NOT NULL,
 		    metric_id int(10) unsigned NOT NULL,
 		    cnt int(10) unsigned NOT NULL,
 		    val double DEFAULT NULL,
-		    PRIMARY KEY (period,device_id,metric_id),
-		    KEY metric_id (metric_id,period),
-		    KEY device_id (device_id,period)
+		    PRIMARY KEY (ts, org_id, device_id, metric_id),
+		    KEY k1 (org_id, device_id, metric_id, ts, val),
+		    KEY k2 (org_id, metric_id, ts, val),
+			KEY k3 (metric_id, ts, org_id, device_id ,val)
 		    ) ENGINE=)" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;

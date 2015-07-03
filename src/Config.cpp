@@ -5,7 +5,7 @@ namespace Config
 {
     unsigned int LoaderThreads = Config::DEFAULT_LOADERTHREADS;
 
-    unsigned int LoadDays = Config::DEFAULT_LOADDAYS;
+    unsigned int LoadHours = Config::DEFAULT_LOADHOURS;
 
     std::string storageEngine = Config::DEFAULT_STORAGE_ENGINE;
     std::string storageEngineExtra = "";

@@ -11,13 +11,13 @@ namespace Config
 
 
     constexpr auto DEFAULT_DB = "test" ;
-    constexpr auto DEFAULT_HOST = "tcp://127.0.0.1:3306";
+    constexpr auto DEFAULT_HOST = "tcp://localhost:3306";
     constexpr auto DEFAULT_USER = "root";
     constexpr auto DEFAULT_PASS = "";
 
     constexpr unsigned int DEFAULT_LOADERTHREADS = 8;
 
-    constexpr unsigned int DEFAULT_LOADDAYS = 10;
+    constexpr unsigned int DEFAULT_LOADHOURS = 6;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 
@@ -30,12 +30,13 @@ namespace Config
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
-    constexpr unsigned int MaxDevices = 32;
-    constexpr unsigned int MaxMetrics = 1000;
+    constexpr unsigned int MaxOrgs = 100;
+    constexpr unsigned int MaxDevices = 30;
+    constexpr unsigned int MaxMetrics = 300;
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
 
-    extern unsigned int LoadDays;
+    extern unsigned int LoadHours;
 
     extern unsigned int LoaderThreads;
 

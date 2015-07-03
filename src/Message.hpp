@@ -17,7 +17,8 @@ public:
     MessageType op = Insert;
     unsigned int ts = 0;
     unsigned int device_id =0;
-    Message(MessageType o, unsigned int t, unsigned int d) :op(o),ts(t),device_id(d) {}
+    unsigned int org_id =0;
+    Message(MessageType o, unsigned int t, unsigned int org, unsigned int d) :op(o),ts(t),device_id(d),org_id(org) {}
     Message() {}
     char* getMessageTypeLabel();
 };

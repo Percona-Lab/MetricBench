@@ -24,7 +24,8 @@ void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const
 
 	cout << std::fixed << std::setprecision(2)
 	    << "Time: " << secFromStart << "sec, "
-	    << "Progress: " << insertProgress - startTs
+	    << "Total: " << total << " points, "
+	    << "Progress: " << insertProgress
 	    << ", % done: " <<
 	    static_cast<double> (insertProgress - startTs) * 100 / (total)
 	    << "%, "
@@ -43,24 +44,28 @@ void Preparer::Prep(){
     /* create thread printing progress */
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
-	Config::StartTimestamp,
-	Config::LoadDays * 86400);
+	0,
+	Config::LoadHours * 3600 / 60 * Config::MaxOrgs * Config::MaxDevices);
 
     /* Populate the test table with data */
-    for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadDays * 86400 ; ts += 60) {
+    for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadHours * 3600 ; ts += 60) {
 //	cout << "Timestamp: " << ts << endl;
 
+	auto orgsCnt = PGen->GetNext(Config::MaxOrgs, 0);
 	auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 
 	/* Devices loop */
-	for (auto dc = 1; dc <= devicesCnt ; dc++) {
-	    Message m(Insert, ts, dc);
-	    tsQueue.push(m);
+	for (auto oc = 1; oc <= orgsCnt ; oc++) {
+		for (auto dc = 1; dc <= devicesCnt ; dc++) {
+			Message m(Insert, ts, oc, dc);
+			tsQueue.push(m);
+	//		cout << "# progress: " << oc << " +++ " << dc << endl;
+			insertProgress = oc * dc * ((ts - Config::StartTimestamp)/60+ 1) ;
+		}
 	}
 
 	tsQueue.wait_empty();
 
-	insertProgress = ts;
 
     }
 
@@ -83,18 +88,19 @@ void Preparer::Run(){
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
 	maxTs + 60,
-	Config::LoadDays * 86400);
+	Config::LoadHours * 3600);
 
 
     cout << "Running benchmark from ts: "
 	<< maxTs + 60 << ", to ts: "
-	<< maxTs + Config::LoadDays * 86400
+	<< maxTs + Config::LoadHours * 3600
 	<< ", range: "
 	<< tsRange
 	<< endl;
 
-    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadDays * 86400; ts += 60) {
+    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadHours * 3600; ts += 60) {
 
+	auto orgsCnt = PGen->GetNext(Config::MaxOrgs, 0);
         unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 	unsigned int oldDevicesCnt = DataLoader.getMaxDevIdForTS(ts - tsRange - 60);
 
@@ -107,15 +113,17 @@ void Preparer::Run(){
 	    << endl;
 */
 	/* Devices loop */
+	for (auto oc = 1; oc <= orgsCnt ; oc++) {
 	for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
 	    if (dc <= devicesCnt) {
-		Message m(Insert, ts, dc);
+		Message m(Insert, ts, oc, dc);
 		tsQueue.push(m);
 	    }
 	    if (dc <= oldDevicesCnt) {
-		Message m(Delete, ts - tsRange - 60, dc);
+		Message m(Delete, ts - tsRange - 60, oc, dc);
 		tsQueue.push(m);
 	    }
+	}
 	}
 
 	tsQueue.wait_size(Config::LoaderThreads*10);

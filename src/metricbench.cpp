@@ -46,7 +46,7 @@ int main(int argc, const char **argv)
             "Connection User for login")
         ("password", po::value<string>(&Config::connPass)->default_value(Config::DEFAULT_PASS),
             "Connection Password for login")
-        ("days", po::value<unsigned int>(&Config::LoadDays)->default_value(Config::DEFAULT_LOADDAYS),
+        ("hours", po::value<unsigned int>(&Config::LoadHours)->default_value(Config::DEFAULT_LOADHOURS),
             "Days of traffic to simulate")
 	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(Config::DEFAULT_LOADERTHREADS),
             "Working threads")
