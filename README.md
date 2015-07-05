@@ -59,7 +59,7 @@ Where we create N similar tables (N=10 by default), and `org_id` is in the range
   --database arg (=test)            Connection Database (schema) to use
   --user arg (=root)                Connection User for login
   --password arg                    Connection Password for login
-  --days arg (=10)                  Days of traffic to simulate
+  --hours arg (=10)                 Hours of traffic to simulate
   --threads arg (=8)                Working threads
   --engine arg (=InnoDB)            Set storage engine
   --engine-extra arg                Extra storage engine options, e.g. 
