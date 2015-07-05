@@ -61,6 +61,7 @@ Where we create N similar tables (N=10 by default), and `org_id` is in the range
   --password arg                    Connection Password for login
   --hours arg (=10)                 Hours of traffic to simulate
   --threads arg (=8)                Working threads
+  --tables arg (=10)		    How many tables to populate
   --engine arg (=InnoDB)            Set storage engine
   --engine-extra arg                Extra storage engine options, e.g. 
                                     'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'
