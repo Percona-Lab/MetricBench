@@ -48,10 +48,11 @@ void Preparer::Prep(){
 	Config::LoadHours * 3600 / 60 * Config::MaxOrgs * Config::MaxDevices);
 
     /* Populate the test table with data */
+	insertProgress = 0;
     for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadHours * 3600 ; ts += 60) {
 //	cout << "Timestamp: " << ts << endl;
 
-	auto orgsCnt = PGen->GetNext(Config::MaxOrgs, 0);
+	auto orgsCnt = Config::MaxOrgs;
 	auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 
 	/* Devices loop */
@@ -59,9 +60,10 @@ void Preparer::Prep(){
 		for (auto dc = 1; dc <= devicesCnt ; dc++) {
 			Message m(Insert, ts, oc, dc);
 			tsQueue.push(m);
+			insertProgress++;
 	//		cout << "# progress: " << oc << " +++ " << dc << endl;
-			insertProgress = oc * dc * ((ts - Config::StartTimestamp)/60+ 1) ;
 		}
+		insertProgress+=Config::MaxDevices-devicesCnt;
 	}
 
 	tsQueue.wait_empty();

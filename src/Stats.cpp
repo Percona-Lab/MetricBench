@@ -21,7 +21,9 @@ unsigned long percentile(std::vector<unsigned long> &vectorIn, double percent)
 void Stats::statsPrint() {
 
     auto t0 = std::chrono::high_resolution_clock::now();
-
+    
+    unsigned long totalInserted = 0;
+ 
     while (true) {
 	std::this_thread::sleep_for (std::chrono::seconds(10));
 	auto t1 = std::chrono::high_resolution_clock::now();
@@ -41,10 +43,13 @@ void Stats::statsPrint() {
 		std::end(execTimes[InsertMetric]));
 	    biggest = *tmp;
 	}
+	
+	totalInserted += cnts;
 
 	std::cout << std::fixed << std::setprecision(2)
 	    << "[Stats] Time: " << secFromStart << "sec, "
 	    << messageTypeLabel[InsertMetric] << ": " << cnts
+	    << ", Total: " << totalInserted
 	    << ", max time(us): " << biggest
 	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size()
 	    << std::endl;

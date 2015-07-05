@@ -216,7 +216,7 @@ void MySQLDriver::CreateSchema() {
 	stmt->execute(R"(
 	    CREATE TABLE metrics (
 		    ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-			org_id int(10) unsigned NOT NULL,
+		    org_id int(10) unsigned NOT NULL,
 		    device_id int(10) unsigned NOT NULL,
 		    metric_id int(10) unsigned NOT NULL,
 		    cnt int(10) unsigned NOT NULL,
@@ -224,7 +224,7 @@ void MySQLDriver::CreateSchema() {
 		    PRIMARY KEY (ts, org_id, device_id, metric_id),
 		    KEY k1 (org_id, device_id, metric_id, ts, val),
 		    KEY k2 (org_id, metric_id, ts, val),
-			KEY k3 (metric_id, ts, org_id, device_id ,val)
+		    KEY k3 (metric_id, ts, org_id, device_id ,val)
 		    ) ENGINE=)" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;
