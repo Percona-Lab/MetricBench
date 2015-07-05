@@ -6,6 +6,7 @@ namespace Config
     unsigned int LoaderThreads = Config::DEFAULT_LOADERTHREADS;
 
     unsigned int LoadHours = Config::DEFAULT_LOADHOURS;
+    unsigned int DBTables = Config::DEFAULT_DBTABLES;
 
     std::string storageEngine = Config::DEFAULT_STORAGE_ENGINE;
     std::string storageEngineExtra = "";

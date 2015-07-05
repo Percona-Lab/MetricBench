@@ -45,7 +45,7 @@ void Preparer::Prep(){
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
 	0,
-	Config::LoadHours * 3600 / 60 * Config::MaxOrgs * Config::MaxDevices);
+	Config::LoadHours * 3600 / 60 * Config::MaxOrgs * Config::MaxDevices * Config::DBTables);
 
     /* Populate the test table with data */
 	insertProgress = 0;
@@ -53,17 +53,20 @@ void Preparer::Prep(){
 //	cout << "Timestamp: " << ts << endl;
 
 	auto orgsCnt = Config::MaxOrgs;
-	auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 
-	/* Devices loop */
+	/* Organizaiton loop */
 	for (auto oc = 1; oc <= orgsCnt ; oc++) {
-		for (auto dc = 1; dc <= devicesCnt ; dc++) {
-			Message m(Insert, ts, oc, dc);
+		/* Devices loop */
+		auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
+		for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
+	/* tables loop */
+		for (auto table = 1; table <= Config::DBTables; table++) {
+			Message m(Insert, ts, oc, dc, table);
 			tsQueue.push(m);
-			insertProgress++;
 	//		cout << "# progress: " << oc << " +++ " << dc << endl;
 		}
-		insertProgress+=Config::MaxDevices-devicesCnt;
+		insertProgress+=Config::DBTables;
+		}
 	}
 
 	tsQueue.wait_empty();
@@ -118,11 +121,11 @@ void Preparer::Run(){
 	for (auto oc = 1; oc <= orgsCnt ; oc++) {
 	for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
 	    if (dc <= devicesCnt) {
-		Message m(Insert, ts, oc, dc);
+		Message m(Insert, ts, oc, dc, 1);
 		tsQueue.push(m);
 	    }
 	    if (dc <= oldDevicesCnt) {
-		Message m(Delete, ts - tsRange - 60, oc, dc);
+		Message m(Delete, ts - tsRange - 60, oc, dc, 1);
 		tsQueue.push(m);
 	    }
 	}

@@ -47,7 +47,9 @@ int main(int argc, const char **argv)
         ("password", po::value<string>(&Config::connPass)->default_value(Config::DEFAULT_PASS),
             "Connection Password for login")
         ("hours", po::value<unsigned int>(&Config::LoadHours)->default_value(Config::DEFAULT_LOADHOURS),
-            "Days of traffic to simulate")
+            "Hours of traffic to simulate")
+        ("tables", po::value<unsigned int>(&Config::DBTables)->default_value(Config::DEFAULT_DBTABLES),
+            "How many DB tables (collections) to use")
 	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(Config::DEFAULT_LOADERTHREADS),
             "Working threads")
 	("engine", po::value<string>()->default_value(Config::DEFAULT_STORAGE_ENGINE),

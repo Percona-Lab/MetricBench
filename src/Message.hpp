@@ -18,7 +18,12 @@ public:
     unsigned int ts = 0;
     unsigned int device_id =0;
     unsigned int org_id =0;
-    Message(MessageType o, unsigned int t, unsigned int org, unsigned int d) :op(o),ts(t),device_id(d),org_id(org) {}
+    unsigned int table_id =0;
+    Message(MessageType o, 
+	unsigned int t, 
+	unsigned int org, 
+	unsigned int d,
+	unsigned int tab) :op(o),ts(t),device_id(d),org_id(org),table_id(tab) {}
     Message() {}
     char* getMessageTypeLabel();
 };

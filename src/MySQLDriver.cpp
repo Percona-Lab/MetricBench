@@ -99,7 +99,7 @@ void MySQLDriver::InsertData(int threadId) {
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Insert: InsertQuery(threadId, m.ts, m.org_id, m.device_id, *stmt);
+	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.org_id, m.device_id, *stmt);
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
@@ -110,7 +110,12 @@ void MySQLDriver::InsertData(int threadId) {
 }
 
 
-void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int org_id, unsigned int device_id, sql::Statement & stmt) {
+void MySQLDriver::InsertQuery(int threadId, 
+	unsigned int table_id, 
+	unsigned int timestamp, 
+	unsigned int org_id, 
+	unsigned int device_id, 
+	sql::Statement & stmt) {
 
     stringstream sql;
 
@@ -118,7 +123,7 @@ void MySQLDriver::InsertQuery(int threadId, unsigned int timestamp, unsigned int
 	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
 
 	sql.str("");
-	sql << "INSERT INTO metrics(ts, org_id, device_id, metric_id, cnt, val ) VALUES ";
+	sql << "INSERT INTO metrics"<<table_id<<" (ts, org_id, device_id, metric_id, cnt, val ) VALUES ";
 	bool notfirst = false;
 
 	/* metrics loop */
@@ -209,23 +214,24 @@ void MySQLDriver::CreateSchema() {
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
     try {
-
-	stmt->execute("DROP TABLE IF EXISTS metrics");
-	if (!Config::preCreateStatement.empty())
-	    stmt->execute(Config::preCreateStatement);
-	stmt->execute(R"(
-	    CREATE TABLE metrics (
-		    ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-		    org_id int(10) unsigned NOT NULL,
-		    device_id int(10) unsigned NOT NULL,
-		    metric_id int(10) unsigned NOT NULL,
-		    cnt int(10) unsigned NOT NULL,
-		    val double DEFAULT NULL,
-		    PRIMARY KEY (ts, org_id, device_id, metric_id),
-		    KEY k1 (org_id, device_id, metric_id, ts, val),
-		    KEY k2 (org_id, metric_id, ts, val),
-		    KEY k3 (metric_id, ts, org_id, device_id ,val)
-		    ) ENGINE=)" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
+	for (auto table=1; table <= Config::DBTables; table++)
+	{
+		stmt->execute("DROP TABLE IF EXISTS metrics" + std::to_string(table));
+		if (!Config::preCreateStatement.empty())
+			stmt->execute(Config::preCreateStatement);
+	stmt->execute("CREATE TABLE metrics" + std::to_string(table) + 
+		    "(ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',\
+		    org_id int(10) unsigned NOT NULL,\
+		    device_id int(10) unsigned NOT NULL,\
+		    metric_id int(10) unsigned NOT NULL,\
+		    cnt int(10) unsigned NOT NULL,\
+		    val double DEFAULT NULL,\
+		    PRIMARY KEY (ts, org_id, device_id, metric_id),\
+		    KEY k1 (org_id, device_id, metric_id, ts, val),\
+		    KEY k2 (org_id, metric_id, ts, val),\
+		    KEY k3 (metric_id, ts, org_id, device_id ,val)\
+		    ) ENGINE=" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
+	}
     } catch (sql::SQLException &e) {
 	cout << "# ERR: SQLException in " << __FILE__;
 	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
