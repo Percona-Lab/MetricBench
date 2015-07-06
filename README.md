@@ -20,6 +20,28 @@ $ cmake .
 $ make
 ```
 
+## Schema
+The current implementation proposes a following schema
+
+```
+CREATE TABLE metricsN
+    	ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+    	org_id int(10) unsigned NOT NULL,
+    	device_id int(10) unsigned NOT NULL,
+    	metric_id int(10) unsigned NOT NULL,
+    	cnt int(10) unsigned NOT NULL,
+    	val double DEFAULT NULL,
+    	PRIMARY KEY (ts, org_id, device_id, metric_id),
+    	KEY k1 (org_id, device_id, metric_id, ts, val),
+    	KEY k2 (org_id, metric_id, ts, val),
+    	KEY k3 (metric_id, ts, org_id, device_id ,val)
+)
+```
+
+Where we create N similar tables (N=10 by default), and `org_id` is in the range 1..10, `device_id` is in the range 1..30 and `metric_id` is in range 1..300
+		    
+		    
+
 ## Running
 
 ### Prerequisites: 
@@ -37,8 +59,9 @@ $ make
   --database arg (=test)            Connection Database (schema) to use
   --user arg (=root)                Connection User for login
   --password arg                    Connection Password for login
-  --days arg (=10)                  Days of traffic to simulate
+  --hours arg (=10)                 Hours of traffic to simulate
   --threads arg (=8)                Working threads
+  --tables arg (=10)		    How many tables to populate
   --engine arg (=InnoDB)            Set storage engine
   --engine-extra arg                Extra storage engine options, e.g. 
                                     'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'
