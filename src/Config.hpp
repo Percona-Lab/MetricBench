@@ -19,7 +19,6 @@ namespace Config
 
     constexpr unsigned int DEFAULT_LOADHOURS = 6;
     constexpr unsigned int DEFAULT_DBTABLES = 10;
-    constexpr unsigned int DEFAULT_MAXORGS = 10;
     constexpr unsigned int DEFAULT_MAXDEVICES = 30;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
@@ -41,7 +40,6 @@ namespace Config
 
     extern unsigned int LoaderThreads;
     extern unsigned int DBTables;
-    extern unsigned int MaxOrgs;
     extern unsigned int MaxDevices;
 
     extern std::string storageEngine;

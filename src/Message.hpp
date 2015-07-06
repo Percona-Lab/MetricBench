@@ -17,13 +17,11 @@ public:
     MessageType op = Insert;
     unsigned int ts = 0;
     unsigned int device_id =0;
-    unsigned int org_id =0;
     unsigned int table_id =0;
     Message(MessageType o, 
 	unsigned int t, 
-	unsigned int org, 
 	unsigned int d,
-	unsigned int tab) :op(o),ts(t),device_id(d),org_id(org),table_id(tab) {}
+	unsigned int tab) :op(o),ts(t),device_id(d),table_id(tab) {}
     Message() {}
     char* getMessageTypeLabel();
 };

@@ -99,7 +99,7 @@ void MySQLDriver::InsertData(int threadId) {
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.org_id, m.device_id, *stmt);
+	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, *stmt);
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
@@ -113,7 +113,6 @@ void MySQLDriver::InsertData(int threadId) {
 void MySQLDriver::InsertQuery(int threadId, 
 	unsigned int table_id, 
 	unsigned int timestamp, 
-	unsigned int org_id, 
 	unsigned int device_id, 
 	sql::Statement & stmt) {
 
@@ -123,7 +122,7 @@ void MySQLDriver::InsertQuery(int threadId,
 	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
 
 	sql.str("");
-	sql << "INSERT INTO metrics"<<table_id<<" (ts, org_id, device_id, metric_id, cnt, val ) VALUES ";
+	sql << "INSERT INTO metrics"<<table_id<<" (ts, device_id, metric_id, cnt, val ) VALUES ";
 	bool notfirst = false;
 
 	/* metrics loop */
@@ -135,7 +134,6 @@ void MySQLDriver::InsertQuery(int threadId,
 	    auto v = PGen->GetNext(0.0, Config::MaxValue);
 	    sql << "(from_unixtime("
 		<< timestamp << "), "
-		<< org_id << ", "
 		<< device_id << ", "
 		<< mc << ","
 		<< PGen->GetNext(Config::MaxCnt, 0)
@@ -221,15 +219,14 @@ void MySQLDriver::CreateSchema() {
 			stmt->execute(Config::preCreateStatement);
 	stmt->execute("CREATE TABLE metrics" + std::to_string(table) + 
 		    "(ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',\
-		    org_id int(10) unsigned NOT NULL,\
 		    device_id int(10) unsigned NOT NULL,\
 		    metric_id int(10) unsigned NOT NULL,\
 		    cnt int(10) unsigned NOT NULL,\
 		    val double DEFAULT NULL,\
-		    PRIMARY KEY (ts, org_id, device_id, metric_id),\
-		    KEY k1 (org_id, device_id, metric_id, ts, val),\
-		    KEY k2 (org_id, metric_id, ts, val),\
-		    KEY k3 (metric_id, ts, org_id, device_id ,val)\
+		    PRIMARY KEY (ts, device_id, metric_id),\
+		    KEY k1 (device_id, metric_id, ts, val),\
+		    KEY k2 (metric_id, ts, val),\
+		    KEY k3 (metric_id, ts, device_id ,val)\
 		    ) ENGINE=" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
 	}
     } catch (sql::SQLException &e) {

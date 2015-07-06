@@ -50,8 +50,6 @@ int main(int argc, const char **argv)
             "Hours of traffic to simulate")
         ("tables", po::value<unsigned int>(&Config::DBTables)->default_value(Config::DEFAULT_DBTABLES),
             "How many DB tables (collections) to use")
-        ("orgs", po::value<unsigned int>(&Config::MaxOrgs)->default_value(Config::DEFAULT_MAXORGS),
-            "How many organizations to populate")
         ("devices", po::value<unsigned int>(&Config::MaxDevices)->default_value(Config::DEFAULT_MAXDEVICES),
             "How many devices to populate")
 	("threads", po::value<unsigned int>(&Config::LoaderThreads)->default_value(Config::DEFAULT_LOADERTHREADS),
