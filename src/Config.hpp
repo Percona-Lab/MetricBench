@@ -19,6 +19,8 @@ namespace Config
 
     constexpr unsigned int DEFAULT_LOADHOURS = 6;
     constexpr unsigned int DEFAULT_DBTABLES = 10;
+    constexpr unsigned int DEFAULT_MAXORGS = 10;
+    constexpr unsigned int DEFAULT_MAXDEVICES = 30;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 
@@ -31,8 +33,6 @@ namespace Config
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
-    constexpr unsigned int MaxOrgs = 10;
-    constexpr unsigned int MaxDevices = 30;
     constexpr unsigned int MaxMetrics = 300;
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
@@ -41,6 +41,8 @@ namespace Config
 
     extern unsigned int LoaderThreads;
     extern unsigned int DBTables;
+    extern unsigned int MaxOrgs;
+    extern unsigned int MaxDevices;
 
     extern std::string storageEngine;
     extern std::string storageEngineExtra;

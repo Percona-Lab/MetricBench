@@ -7,6 +7,8 @@ namespace Config
 
     unsigned int LoadHours = Config::DEFAULT_LOADHOURS;
     unsigned int DBTables = Config::DEFAULT_DBTABLES;
+    unsigned int MaxOrgs = Config::DEFAULT_MAXORGS;
+    unsigned int MaxDevices = Config::DEFAULT_MAXDEVICES;
 
     std::string storageEngine = Config::DEFAULT_STORAGE_ENGINE;
     std::string storageEngineExtra = "";
