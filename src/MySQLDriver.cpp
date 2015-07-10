@@ -241,6 +241,3 @@ void MySQLDriver::CreateSchema() {
     cout << "#\t Schema created" << endl;
 }
 
-void MySQLDriver::setLatencyStats(LatencyStats* ls) {
-  this->latencyStats = ls;
-}

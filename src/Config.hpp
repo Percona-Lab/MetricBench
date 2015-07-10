@@ -28,10 +28,10 @@ namespace Config
     extern std::string connUser;
     extern std::string connPass;
 
-    // TODO:  Make these configurable
     constexpr unsigned int StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
+    // TODO:  Make these configurable
     constexpr unsigned int MaxMetrics = 300;
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;

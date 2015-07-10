@@ -23,38 +23,27 @@
 #include "pareto.hpp"
 #include "Config.hpp"
 #include "LatencyStats.hpp"
+#include "GenericDriver.hpp"
 
 using namespace std;
 
-class MySQLDriver {
-    const string user;
-    const string pass;
-    const string database;
-    const string url;
-    ParetoGenerator* PGen;
-    LatencyStats* latencyStats;
-
-    /* range between first and last records in metrics */
-    unsigned int tsRange;
-
+class MySQLDriver : public GenericDriver {
 public:
     MySQLDriver(const string user,
 	    const string pass,
 	    const string database,
-	    const string url) :user(user),
-		    pass(pass),
-		    database(database),
-		    url(url),
-                    latencyStats((LatencyStats *)nullptr) {}
-    void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
+	    const string url) : 
+		GenericDriver(user,
+		    pass,
+		    database,
+		    url) {}
+
     void Prep();
     void Run(unsigned int& minTs, unsigned int& maxTs);
     void CreateSchema();
 
     /* return max device_id available for given ts */
     unsigned int getMaxDevIdForTS(unsigned int ts);
-
-    void setLatencyStats(LatencyStats* ls);
 
 private:
     void InsertData(int threadId);
