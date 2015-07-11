@@ -40,6 +40,6 @@ private:
     void InsertQuery(int threadId, 
 	unsigned int table_id,
 	unsigned int timestamp, 
-	unsigned int device_id);
+	unsigned int device_id,  mongo::DBClientConnection &mongo);
     void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id);
 };

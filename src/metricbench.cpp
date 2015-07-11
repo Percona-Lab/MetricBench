@@ -32,6 +32,8 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
     std::string runDriver = "mysql";
+    mongo::client::initialize();
+ 
 
     // TODO: read these from response file
     po::options_description desc("Command line options");
