@@ -31,11 +31,13 @@ int main(int argc, const char **argv)
 {
 
     std::string runMode = "run";
+    std::string runDriver = "mysql";
 
     // TODO: read these from response file
     po::options_description desc("Command line options");
     desc.add_options()
 	("help", "Help message")
+	("driver", po::value<string>(&runDriver)->default_value(""), "Driver: mysql or mongodb")
 	("mode", po::value<string>(&runMode)->default_value(""), "Mode - run or prepare (load "
 	    "initial dataset)")
         ("url",  po::value<string>(&Config::connHost)->default_value(Config::DEFAULT_HOST),
@@ -86,6 +88,11 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
+    if (runDriver.compare("") == 0) {
+        cout << "# ERR: You must specify --driver.  Use --help for information.\n\n";
+        return EXIT_FAILURE;
+    }
+
     if (vm.count("engine")) {
 	cout << "Using Storage engine: "
 	    << vm["engine"].as<string>() << endl;
@@ -113,11 +120,18 @@ int main(int argc, const char **argv)
 
     ParetoGenerator PG(1.04795);
 
-    MySQLDriver MLP(user, pass, database, url);
-    MLP.SetGenerator(&PG);
-    MLP.setLatencyStats(&latencyStats);
+    GenericDriver *GenDrive;
 
-    Preparer Runner(MLP);
+    if (runDriver == "mysql") {
+	    GenDrive = new MySQLDriver(user, pass, database, url);
+    } else if (runDriver == "mongodb") {
+	    GenDrive = new MongoDBDriver(user, pass, database, url);
+    }
+
+    GenDrive->SetGenerator(&PG);
+    GenDrive->setLatencyStats(&latencyStats);
+
+    Preparer Runner(GenDrive);
     Runner.SetGenerator(&PG);
 
     Stats st;

@@ -64,7 +64,7 @@ BOOST_ROOT=${BUILD_ROOT}/MetricBench_boost
 mkdir -p ${BOOST_ROOT}
 ./bootstrap.sh --prefix=${BOOST_ROOT} \
         --libdir=${BOOST_ROOT}/lib --includedir=${BOOST_ROOT}/include \
-        --with-libraries=program_options,filesystem,system,test
+        --with-libraries=program_options,filesystem,system,test,thread,regex
 if [ "${BUILD_STATIC}" -gt 0 ]; then
   ./b2 --build-type=complete --layout=tagged link=static install | tee b2.out
 else

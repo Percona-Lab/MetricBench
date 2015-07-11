@@ -36,12 +36,14 @@ public:
 		    url(url),
                     latencyStats((LatencyStats *)nullptr) {}
     void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
-    void Prep();
-    void Run(unsigned int& minTs, unsigned int& maxTs);
-    void CreateSchema();
+    void setLatencyStats(LatencyStats* ls) { latencyStats = ls; }
+
+    /* functions to redefine in Driver implementation */
+    virtual void Prep() = 0;
+    virtual void Run(unsigned int& minTs, unsigned int& maxTs) = 0;
+    virtual void CreateSchema() = 0;
 
     /* return max device_id available for given ts */
-    unsigned int getMaxDevIdForTS(unsigned int ts);
+    virtual unsigned int getMaxDevIdForTS(unsigned int ts) = 0;
 
-    void setLatencyStats(LatencyStats* ls) { latencyStats = ls; }
 };

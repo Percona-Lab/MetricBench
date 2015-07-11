@@ -9,19 +9,20 @@
 #include <atomic>
 
 #include "MySQLDriver.hpp"
+#include "MongoDBDriver.hpp"
 #include "Config.hpp"
 #include "LatencyStats.hpp"
 
 /* General class to handle benchmark, not DB specific */
 class Preparer {
-    MySQLDriver& DataLoader;
+    GenericDriver* DataLoader;
     std::atomic<unsigned int> insertProgress {0};
     std::atomic<bool> progressLoad {true};
     ParetoGenerator* PGen;
     LatencyStats* latencyStats=(LatencyStats *)nullptr;
 
 public:
-    Preparer(MySQLDriver &ML) :DataLoader(ML) {}
+    Preparer(GenericDriver *ML) :DataLoader(ML) {}
     void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
     /* prepare data, like create schema and insert */
     void Prep();

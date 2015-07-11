@@ -38,12 +38,12 @@ public:
 		    database,
 		    url) {}
 
-    void Prep();
-    void Run(unsigned int& minTs, unsigned int& maxTs);
-    void CreateSchema();
+    virtual void Prep();
+    virtual void Run(unsigned int& minTs, unsigned int& maxTs);
+    virtual void CreateSchema();
 
     /* return max device_id available for given ts */
-    unsigned int getMaxDevIdForTS(unsigned int ts);
+    virtual unsigned int getMaxDevIdForTS(unsigned int ts);
 
 private:
     void InsertData(int threadId);

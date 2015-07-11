@@ -38,8 +38,8 @@ void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const
 
 void Preparer::Prep(){
 
-    DataLoader.CreateSchema();
-    DataLoader.Prep();
+    DataLoader->CreateSchema();
+    DataLoader->Prep();
 
     /* create thread printing progress */
     std::thread threadReporter(&Preparer::prepProgressPrint,
@@ -79,7 +79,7 @@ void Preparer::Run(){
 
     unsigned int minTs, maxTs;
 
-    DataLoader.Run(minTs, maxTs);
+    DataLoader->Run(minTs, maxTs);
 
     auto tsRange = maxTs - minTs;
 
@@ -100,7 +100,7 @@ void Preparer::Run(){
     for (auto ts=maxTs + 60; ts < maxTs + Config::LoadHours * 3600; ts += 60) {
 
         unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
-	unsigned int oldDevicesCnt = DataLoader.getMaxDevIdForTS(ts - tsRange - 60);
+	unsigned int oldDevicesCnt = DataLoader->getMaxDevIdForTS(ts - tsRange - 60);
 
 /*
 	cout << "Timestamp: " << ts

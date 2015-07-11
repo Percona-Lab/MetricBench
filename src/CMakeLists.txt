@@ -17,6 +17,7 @@ if (BUILD_STATIC)
 else()
   message(STATUS "Building a dynamically linked binary")
   set(MYSQLCPPCONN_LIB_NAME "mysqlcppconn")
+  set(MONGO_LIB_NAME "mongoclient")
   set(Boost_USE_STATIC_LIBS OFF)
   set(CXX_BUILD_FLAGS "")
   set(LINK_BUILD_FLAGS "")
@@ -63,9 +64,36 @@ find_library(MYSQL_CLIENT
 
 message(STATUS ${MYSQL_CLIENT})
 
+# Find the MongoDB library locations
+
+set(MONGO_LIB_ROOT_DIR
+        "${MONGO_LIB_ROOT_DIR}"
+        CACHE
+        PATH
+        "Where to start looking for this component.")
+
+find_path(MONGO_LIB_INCLUDE_DIR
+        mongo/client/dbclient.h
+        HINTS
+        ${MONGO_LIB_ROOT_DIR}
+        PATH_SUFFIXES
+        include)
+
+find_library(MONGO_LIBRARY
+        NAMES
+        ${MONGO_LIB_NAME}
+        HINTS
+        ${MONGO_LIB_ROOT_DIR}
+        PATH_SUFFIXES
+        lib64
+        lib
+        lib/x86_64-linux-gnu)
+
+message(STATUS ${MONGO_LIBRARY})
+
 # Configure Boost packages
 
-find_package(Boost REQUIRED COMPONENTS program_options system filesystem)
+find_package(Boost REQUIRED COMPONENTS program_options system filesystem thread regex)
 
 # Configure header directories
 
