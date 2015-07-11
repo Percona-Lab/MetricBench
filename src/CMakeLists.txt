@@ -93,11 +93,11 @@ message(STATUS ${MONGO_LIBRARY})
 
 # Configure Boost packages
 
-find_package(Boost REQUIRED COMPONENTS program_options system filesystem thread regex)
+find_package(Boost REQUIRED COMPONENTS program_options system-mt filesystem thread-mt regex)
 
 # Configure header directories
 
-include_directories( ${Boost_INCLUDE_DIRS} ${MYSQLCONNECTORCPP_INCLUDE_DIR} )
+include_directories( ${Boost_INCLUDE_DIRS} ${MYSQLCONNECTORCPP_INCLUDE_DIR} ${MONGO_LIB_INCLUDE_DIR} )
 
 # MySQL client C/C++ headers and libraries are required
 
@@ -115,14 +115,14 @@ add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 # MetricBench binary settings
 
-add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp Config.cpp 
-  Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp)
+add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp MongoDBDriver.cpp 
+		Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp)
 
 set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
 
-target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT}
-  ${Boost_LIBRARIES} ${PTHREAD_LIB} m rt dl z c)
+target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT} 
+  ${MONGO_LIBRARY} ${Boost_LIBRARIES} ${PTHREAD_LIB} m rt dl z c)
 
 # Unit Tests
 
