@@ -25,12 +25,13 @@ The current implementation proposes a following schema
 
 ```
 CREATE TABLE metricsN
+	id int(10) unsigned NOT NULL AUTO_INCREMENT,
     	ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
     	device_id int(10) unsigned NOT NULL,
     	metric_id int(10) unsigned NOT NULL,
     	cnt int(10) unsigned NOT NULL,
     	val double DEFAULT NULL,
-    	PRIMARY KEY (ts, device_id, metric_id),
+    	PRIMARY KEY (id),
     	KEY k1 (device_id, metric_id, ts, val),
     	KEY k2 (device_id, ts, metric_id, val)
     	KEY k3 (metric_id, ts, device_id, val)
