@@ -19,7 +19,7 @@ namespace Config
 
     constexpr unsigned int DEFAULT_LOADHOURS = 6;
     constexpr unsigned int DEFAULT_DBTABLES = 10;
-    constexpr unsigned int DEFAULT_MAXDEVICES = 300;
+    constexpr unsigned int DEFAULT_MAXDEVICES = 1000;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 

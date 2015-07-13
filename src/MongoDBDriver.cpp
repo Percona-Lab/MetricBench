@@ -26,7 +26,7 @@ void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 
     mongo::DBClientConnection c;
 
-    c.connect("localhost");
+    c.connect(url);
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
 	    std::thread threadInsertData([this,i](){ InsertData(i); });
@@ -51,7 +51,7 @@ void MongoDBDriver::InsertData(int threadId) {
     cout << "InsertData thread started" << endl;
 
     mongo::DBClientConnection c;
-    c.connect("localhost");
+    c.connect(url);
 
     Message m;
 
@@ -98,7 +98,7 @@ void MongoDBDriver::InsertQuery(int threadId,
 
 
 	auto t0 = std::chrono::high_resolution_clock::now();
-	mongo.insert("metric_bench.col"+std::to_string(table_id), bulk_data);
+	mongo.insert(database+".metrics"+std::to_string(table_id), bulk_data);
 	bulk_data.clear();
 	auto t1 = std::chrono::high_resolution_clock::now();
 	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
@@ -121,14 +121,37 @@ void MongoDBDriver::DeleteQuery(int threadId, unsigned int timestamp, unsigned i
 void MongoDBDriver::CreateSchema() {
 
 
-    try {
-    mongo::DBClientConnection c;
+	try {
+		mongo::DBClientConnection c;
+		c.connect(url);
+		for (auto table=1; table <= Config::DBTables; table++)
+		{
+			c.dropCollection(database+".metrics"+std::to_string(table));
+			c.createCollection(database+".metrics"+std::to_string(table));
+			c.createIndex(database+".metrics"+std::to_string(table), 
+				BSON (
+				"device_id" << 1 <<
+				"metric_id" << 1 <<
+				"ts" << 1 <<
+				"val" << 1 ));
+			c.createIndex(database+".metrics"+std::to_string(table), 
+				BSON (
+				"device_id" << 1 <<
+				"ts" << 1 <<
+				"metric_id" << 1 <<
+				"val" << 1 ));
+			c.createIndex(database+".metrics"+std::to_string(table), 
+				BSON (
+				"metric_id" << 1 <<
+				"ts" << 1 <<
+				"device_id" << 1 <<
+				"val" << 1 ));
 
-    c.connect("localhost");
+		}
 
-   } catch( const mongo::DBException &e ) {
-        std::cout << "caught " << e.what() << std::endl;
-    }
-    cout << "#\t Schema created" << endl;
+	} catch( const mongo::DBException &e ) {
+		std::cout << "caught " << e.what() << std::endl;
+	}
+	cout << "#\t Schema created" << endl;
 }
 

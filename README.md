@@ -32,7 +32,7 @@ CREATE TABLE metricsN
     	val double DEFAULT NULL,
     	PRIMARY KEY (ts, device_id, metric_id),
     	KEY k1 (device_id, metric_id, ts, val),
-    	KEY k2 (metric_id, ts, val),
+    	KEY k2 (device_id, ts, metric_id, val)
     	KEY k3 (metric_id, ts, device_id, val)
 )
 ```
