@@ -1,6 +1,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
+#include <unordered_set>
 
 #include "Preparer.hpp"
 #include "MySQLDriver.hpp"
@@ -45,16 +46,27 @@ void Preparer::Prep(){
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
 	0,
-	Config::LoadHours * 3600 / 60 * Config::MaxDevices * Config::DBTables);
+	Config::LoadHours * 3600 / 60 * 5000 * Config::DBTables);
 
     /* Populate the test table with data */
 	insertProgress = 0;
+
+    	std::random_device rd;
+    	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(1, Config::MaxDevices);
+
     for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadHours * 3600 ; ts += 60) {
 //	cout << "Timestamp: " << ts << endl;
 
 	    /* Devices loop */
-	    auto devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
-	    for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
+	   /*auto devicesCnt = 5000;
+	   std::unordered_set< int > s;
+	   while (s.size() < devicesCnt) {
+	   auto size_b = s.size();
+	   auto dc = dis(gen);
+	   s.insert(dc);
+	   if (size_b==s.size()) { continue; }*/
+	   for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
 		    /* tables loop */
 		    for (auto table = 1; table <= Config::DBTables; table++) {
 			    Message m(Insert, ts, dc, table);

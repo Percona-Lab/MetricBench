@@ -19,7 +19,7 @@ namespace Config
 
     constexpr unsigned int DEFAULT_LOADHOURS = 6;
     constexpr unsigned int DEFAULT_DBTABLES = 10;
-    constexpr unsigned int DEFAULT_MAXDEVICES = 1000;
+    constexpr unsigned int DEFAULT_MAXDEVICES = 5000;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 
@@ -32,7 +32,7 @@ namespace Config
     constexpr unsigned int SecInDay = 24*60*60;
 
     // TODO:  Make these configurable
-    constexpr unsigned int MaxMetrics = 300;
+    constexpr unsigned int MaxMetrics = 50000;
     constexpr double MaxValue = 10000.0;
     constexpr unsigned int MaxCnt = 60;
 

@@ -25,20 +25,20 @@ The current implementation proposes a following schema
 
 ```
 CREATE TABLE metricsN
-	id int(10) unsigned NOT NULL AUTO_INCREMENT,
     	ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
     	device_id int(10) unsigned NOT NULL,
     	metric_id int(10) unsigned NOT NULL,
     	cnt int(10) unsigned NOT NULL,
     	val double DEFAULT NULL,
-    	PRIMARY KEY (id),
-    	KEY k1 (device_id, metric_id, ts, val),
-    	KEY k2 (device_id, ts, metric_id, val)
-    	KEY k3 (metric_id, ts, device_id, val)
+	PRIMARY KEY (device_id, metric_id, ts),
+	KEY k1 (ts, device_id, metric_id, val),
+        KEY k2 (device_id, ts, metric_id, val),
+	KEY k3 (metric_id, ts, device_id, val),
+	KEY k4 (ts, metric_id, val)
 )
 ```
 
-Where we create N similar tables (N=10 by default), and `device_id` is in the range 1..300 and `metric_id` is in range 1..300
+Where we create N similar tables (N=10 by default), and `device_id` is in the range 1..5000 and `metric_id` is in range 1..50000, but only 500 metrics are inserted for a given (ts, device_id)
 		    
 		    
 
