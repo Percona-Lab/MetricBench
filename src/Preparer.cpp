@@ -24,14 +24,13 @@ void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const
 			) : 0 );
 
 	cout << std::fixed << std::setprecision(2)
-	    << "Time: " << secFromStart << "sec, "
-	    << "Total: " << total << " points, "
-	    << "Progress: " << insertProgress
-	    << ", % done: " <<
-	    static_cast<double> (insertProgress - startTs) * 100 / (total)
+	    << "[Progress] Time: " << secFromStart << "[sec], "
+	    << "Progress: " << insertProgress 
+	    << "/" << total << " = "
+	    << static_cast<double> (insertProgress - startTs) * 100 / (total)
 	    << "%, "
-	    << "Est total time: " << estTotalTime
-	    << "sec, Left: " << estTotalTime - secFromStart
+	    << "Time left: " << estTotalTime - secFromStart << "[sec] "
+	    << "Est total: " << estTotalTime << "[sec]" 
 	    << endl;
     }
 
@@ -46,16 +45,13 @@ void Preparer::Prep(){
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
 	0,
-	Config::LoadHours * 3600 / 60 * 5000 * Config::DBTables);
+	Config::LoadMins * Config::MaxDevices * Config::DBTables);
 
     /* Populate the test table with data */
 	insertProgress = 0;
 
-    	std::random_device rd;
-    	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, Config::MaxDevices);
 
-    for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadHours * 3600 ; ts += 60) {
+    for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadMins * 60 ; ts += 60) {
 //	cout << "Timestamp: " << ts << endl;
 
 	    /* Devices loop */
@@ -73,6 +69,8 @@ void Preparer::Prep(){
 			    tsQueue.push(m);
 		    }
 		    insertProgress+=Config::DBTables;
+		    //cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
+		    tsQueue.wait_size(Config::LoaderThreads*2);
 	    }
 
 	tsQueue.wait_empty();
@@ -99,17 +97,17 @@ void Preparer::Run(){
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
 	maxTs + 60,
-	Config::LoadHours * 3600);
+	Config::LoadMins * 60);
 
 
     cout << "Running benchmark from ts: "
 	<< maxTs + 60 << ", to ts: "
-	<< maxTs + Config::LoadHours * 3600
+	<< maxTs + Config::LoadMins * 60
 	<< ", range: "
 	<< tsRange
 	<< endl;
 
-    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadHours * 3600; ts += 60) {
+    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadMins * 60; ts += 60) {
 
         unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
 	unsigned int oldDevicesCnt = DataLoader->getMaxDevIdForTS(ts - tsRange - 60);

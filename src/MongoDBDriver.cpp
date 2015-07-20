@@ -1,6 +1,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
+#include <unordered_set>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -79,11 +80,22 @@ void MongoDBDriver::InsertQuery(int threadId,
 
     std::vector<mongo::BSONObj> bulk_data;
 
-	auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
+	//auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
+    	std::random_device rd;
+    	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
+
+	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
 
 
 	/* metrics loop */
-	for (auto mc = 1; mc <= metricsCnt; mc++) {
+	std::unordered_set< int > s;
+	while (s.size() < metricsCnt) {
+	   auto size_b = s.size();
+	   auto mc = dis(gen);
+	   s.insert(mc);
+	   if (size_b==s.size()) { continue; }
+	//for (auto mc = 1; mc <= metricsCnt; mc++) {
 	    	auto v = PGen->GetNext(0.0, Config::MaxValue);
 		mongo::BSONObj record = BSON (
                 "ts" << timestamp <<
@@ -128,18 +140,33 @@ void MongoDBDriver::CreateSchema() {
 		{
 			c.dropCollection(database+".metrics"+std::to_string(table));
 			c.createCollection(database+".metrics"+std::to_string(table));
+		   // PRIMARY KEY (device_id, metric_id, ts),
+			c.createIndex(database+".metrics"+std::to_string(table), 
+			mongo::IndexSpec().addKeys( BSON (
+				"device_id" << 1 <<
+				"metric_id" << 1 <<
+				"ts" << 1 )).unique() );
+		   // KEY k1 (ts, device_id, metric_id, val),
+			c.createIndex(database+".metrics"+std::to_string(table), 
+				BSON (
+				"ts" << 1 <<
+				"device_id" << 1 <<
+				"metric_id" << 1 <<
+				"val" << 1 ));
+		   // KEY k4 (ts, metric_id, val)
+			c.createIndex(database+".metrics"+std::to_string(table), 
+				BSON (
+				"ts" << 1 <<
+				"metric_id" << 1 <<
+				"val" << 1 ));
+		   // KEY k2 (device_id, ts, metric_id, val),
 			c.createIndex(database+".metrics"+std::to_string(table), 
 				BSON (
 				"device_id" << 1 <<
-				"metric_id" << 1 <<
-				"ts" << 1 <<
-				"val" << 1 ));
-			c.createIndex(database+".metrics"+std::to_string(table), 
-				BSON (
-				"device_id" << 1 <<
 				"ts" << 1 <<
 				"metric_id" << 1 <<
 				"val" << 1 ));
+		   // KEY k3 (metric_id, ts, device_id, val),
 			c.createIndex(database+".metrics"+std::to_string(table), 
 				BSON (
 				"metric_id" << 1 <<

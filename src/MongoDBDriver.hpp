@@ -9,6 +9,7 @@
 #include <string>
 
 #include "mongo/client/dbclient.h"
+#include "mongo/client/index_spec.h"
 
 #include "pareto.hpp"
 #include "Config.hpp"

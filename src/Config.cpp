@@ -5,7 +5,7 @@ namespace Config
 {
     unsigned int LoaderThreads = Config::DEFAULT_LOADERTHREADS;
 
-    unsigned int LoadHours = Config::DEFAULT_LOADHOURS;
+    unsigned int LoadMins = Config::DEFAULT_LOADMINS;
     unsigned int DBTables = Config::DEFAULT_DBTABLES;
     unsigned int MaxDevices = Config::DEFAULT_MAXDEVICES;
 

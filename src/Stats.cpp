@@ -47,9 +47,9 @@ void Stats::statsPrint() {
 	totalInserted += cnts;
 
 	std::cout << std::fixed << std::setprecision(2)
-	    << "[Stats] Time: " << secFromStart << "sec, "
-	    << messageTypeLabel[InsertMetric] << ": " << cnts
-	    << ", Total: " << totalInserted
+	    << "[Stats] Time: " << secFromStart << "[sec], " 
+	    << messageTypeLabel[InsertMetric] << " interval:" << cnts
+	    << ", cum: " << totalInserted
 	    << ", max time(us): " << biggest
 	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size()
 	    << std::endl;
