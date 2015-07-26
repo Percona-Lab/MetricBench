@@ -120,9 +120,9 @@ git checkout legacy
 MONGO_LIB_ROOT_DIR=${BUILD_ROOT}/MetricBench_mongo-cxx-driver
 if [ "$(find ${MONGO_LIB_ROOT_DIR} \( -name '*.a' -or -name '*.so' \) | wc -l)" ]; then 
   if [ "${BUILD_STATIC}" -gt 0 ]; then
-    scons --prefix=${MONGO_LIB_ROOT_DIR} --extrapath=${BOOST_ROOT} --dynamic-boost=off install
+    scons --prefix=${MONGO_LIB_ROOT_DIR} --extrapath=${BOOST_ROOT} --dynamic-boost=off  --c++11 install
   else
-    scons --prefix=${MONGO_LIB_ROOT_DIR} --extrapath=${BOOST_ROOT} --dynamic-boost=on install
+    scons --prefix=${MONGO_LIB_ROOT_DIR} --extrapath=${BOOST_ROOT} --dynamic-boost=on  --c++11 install
   fi
 fi
 export MONGO_LIB_ROOT_DIR
