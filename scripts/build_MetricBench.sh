@@ -19,6 +19,7 @@
 # david.bennett at percona.com - 6/9/2015
 
 BUILD_STATIC=0
+BUILD_TYPE=Debug
 
 # determine if we are running from inside of
 # the MetricBench repository or we are running
@@ -141,12 +142,14 @@ fi
 cd ${MBROOT}/src
 ./clean.sh all
 if [ "${BUILD_STATIC}" -gt 0 ]; then
-  cmake -DBUILD_STATIC=1 -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+  cmake -DBUILD_STATIC=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
 else
-  cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} \
+  cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} \
         -DMONGO_LIB_ROOT_DIR:PATH=${MONGO_LIB_ROOT_DIR}  .
 fi
-make
+make -j4
 
 # Epilogue 
 
