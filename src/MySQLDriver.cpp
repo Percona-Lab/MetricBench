@@ -104,6 +104,8 @@ void MySQLDriver::InsertData(int threadId) {
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
+            default:
+                break;
 	}
 
     }

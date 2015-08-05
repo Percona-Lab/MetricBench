@@ -32,8 +32,6 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
     std::string runDriver = "mysql";
-    mongo::client::initialize();
- 
 
     // TODO: read these from response file
     po::options_description desc("Command line options");
@@ -125,9 +123,9 @@ int main(int argc, const char **argv)
     GenericDriver *GenDrive;
 
     if (runDriver == "mysql") {
-	    GenDrive = new MySQLDriver(user, pass, database, url);
+        GenDrive = new MySQLDriver(user, pass, database, url);
     } else if (runDriver == "mongodb") {
-	    GenDrive = new MongoDBDriver(user, pass, database, url);
+	GenDrive = new MongoDBDriver(user, pass, database, url);
     }
 
     GenDrive->SetGenerator(&PG);
