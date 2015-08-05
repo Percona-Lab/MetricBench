@@ -117,7 +117,7 @@ add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 # MetricBench binary settings
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp MongoDBDriver.cpp 
-		Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp)
+		Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp)
 
 set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
@@ -148,7 +148,7 @@ foreach(testSrc ${TEST_SRCS})
         get_filename_component(testName ${testSrc} NAME_WE)
 
         #Add compile target
-        add_executable(${testName} ${testSrc} Message.cpp LatencyStats.cpp
+        add_executable(${testName} ${testSrc} Message.cpp LatencyStats.cpp Uri.cpp
           RunningMean.cpp)
 
         #link to Boost libraries AND your targets and dependencies
