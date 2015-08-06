@@ -9,7 +9,7 @@
 class Uri
 {
 public:
-  std::wstring QueryString, Path, Protocol, Host, Port;
-  static Uri Parse(const std::wstring &);
+  std::string QueryString, Path, Protocol, Host, Port;
+  static Uri Parse(const std::string &);
 };
 
