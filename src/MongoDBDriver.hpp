@@ -23,11 +23,7 @@ public:
     MongoDBDriver(const string user,
 	    const string pass,
 	    const string database,
-	    const string url) : 
-		GenericDriver(user,
-		    pass,
-		    database,
-		    url) {}
+	    const string url);
 
     virtual void Prep();
     virtual void Run(unsigned int& minTs, unsigned int& maxTs);
@@ -37,10 +33,11 @@ public:
     virtual unsigned int getMaxDevIdForTS(unsigned int ts);
 
 private:
+    bool getConnection(mongo::DBClientConnection &);
     void InsertData(int threadId);
-    void InsertQuery(int threadId, 
+    void InsertQuery(int threadId,
 	unsigned int table_id,
-	unsigned int timestamp, 
+	unsigned int timestamp,
 	unsigned int device_id,  mongo::DBClientConnection &mongo);
     void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id);
 };

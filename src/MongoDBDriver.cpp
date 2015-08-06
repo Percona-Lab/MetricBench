@@ -9,11 +9,44 @@
 #include "tsqueue.hpp"
 #include "Config.hpp"
 #include "Message.hpp"
+#include "Uri.hpp"
 
 extern tsqueue<Message> tsQueue;
 extern tsqueue<StatMessage> statQueue;
 
+
 using namespace std;
+
+// initialize the first time
+char mongo_init=0;
+
+MongoDBDriver::MongoDBDriver(const string user, const string pass,
+                             const string database, const string url)
+                             : GenericDriver(user,pass,database,url){
+    if (!mongo_init) {
+        mongo::client::initialize();
+        mongo_init++;
+    }
+}
+
+bool MongoDBDriver::getConnection(mongo::DBClientConnection &conn) {
+
+    Uri u = Uri::Parse(url);
+    int p=-1; // default
+    if (!u.Port.empty()) {
+        try {
+            p = stoi(u.Port,nullptr,10);
+        } catch(...) {
+        }
+    }
+
+    mongo::HostAndPort hp(u.Host,p);
+
+    std::string errmsg = url;
+
+    return(conn.connect(hp,errmsg));
+
+}
 
 void MongoDBDriver::Prep() {
     for (int i = 0; i < Config::LoaderThreads; i++) {
@@ -24,10 +57,8 @@ void MongoDBDriver::Prep() {
 
 void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 
-
     mongo::DBClientConnection c;
-
-    c.connect(url);
+    getConnection(c);
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
 	    std::thread threadInsertData([this,i](){ InsertData(i); });
@@ -52,7 +83,7 @@ void MongoDBDriver::InsertData(int threadId) {
     cout << "InsertData thread started" << endl;
 
     mongo::DBClientConnection c;
-    c.connect(url);
+    getConnection(c);
 
     Message m;
 
@@ -65,6 +96,8 @@ void MongoDBDriver::InsertData(int threadId) {
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id);
 		break;
+            default:
+                break;
 	}
 
     }
@@ -73,16 +106,16 @@ void MongoDBDriver::InsertData(int threadId) {
 }
 
 
-void MongoDBDriver::InsertQuery(int threadId, 
-	unsigned int table_id, 
-	unsigned int timestamp, 
+void MongoDBDriver::InsertQuery(int threadId,
+	unsigned int table_id,
+	unsigned int timestamp,
 	unsigned int device_id, mongo::DBClientConnection &mongo) {
 
     std::vector<mongo::BSONObj> bulk_data;
 
 	//auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
-    	std::random_device rd;
-    	std::mt19937 gen(rd());
+	std::random_device rd;
+	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
 
 	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
@@ -96,15 +129,15 @@ void MongoDBDriver::InsertQuery(int threadId,
 	   s.insert(mc);
 	   if (size_b==s.size()) { continue; }
 	//for (auto mc = 1; mc <= metricsCnt; mc++) {
-	    	auto v = PGen->GetNext(0.0, Config::MaxValue);
+		auto v = PGen->GetNext(0.0, Config::MaxValue);
 		mongo::BSONObj record = BSON (
                 "ts" << timestamp <<
 		"device_id" << device_id <<
 		"metric_id" << mc <<
 		"cnt" << PGen->GetNext(Config::MaxCnt, 0) <<
 		"value" << (v < 0.5 ? 0 : v) );
-	
-        	bulk_data.push_back(record);
+
+                bulk_data.push_back(record);
 
 	}
 
@@ -135,39 +168,39 @@ void MongoDBDriver::CreateSchema() {
 
 	try {
 		mongo::DBClientConnection c;
-		c.connect(url);
+                getConnection(c);
 		for (auto table=1; table <= Config::DBTables; table++)
 		{
 			c.dropCollection(database+".metrics"+std::to_string(table));
 			c.createCollection(database+".metrics"+std::to_string(table));
 		   // PRIMARY KEY (device_id, metric_id, ts),
-			c.createIndex(database+".metrics"+std::to_string(table), 
+			c.createIndex(database+".metrics"+std::to_string(table),
 			mongo::IndexSpec().addKeys( BSON (
 				"device_id" << 1 <<
 				"metric_id" << 1 <<
 				"ts" << 1 )).unique() );
 		   // KEY k1 (ts, device_id, metric_id, val),
-			c.createIndex(database+".metrics"+std::to_string(table), 
+			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"ts" << 1 <<
 				"device_id" << 1 <<
 				"metric_id" << 1 <<
 				"val" << 1 ));
 		   // KEY k4 (ts, metric_id, val)
-			c.createIndex(database+".metrics"+std::to_string(table), 
+			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"ts" << 1 <<
 				"metric_id" << 1 <<
 				"val" << 1 ));
 		   // KEY k2 (device_id, ts, metric_id, val),
-			c.createIndex(database+".metrics"+std::to_string(table), 
+			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"device_id" << 1 <<
 				"ts" << 1 <<
 				"metric_id" << 1 <<
 				"val" << 1 ));
 		   // KEY k3 (metric_id, ts, device_id, val),
-			c.createIndex(database+".metrics"+std::to_string(table), 
+			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"metric_id" << 1 <<
 				"ts" << 1 <<

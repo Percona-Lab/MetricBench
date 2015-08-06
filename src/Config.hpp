@@ -11,7 +11,7 @@ namespace Config
 
 
     constexpr auto DEFAULT_DB = "test" ;
-    constexpr auto DEFAULT_HOST = "tcp://localhost:3306";
+    constexpr auto DEFAULT_HOST = "tcp://localhost";
     constexpr auto DEFAULT_USER = "root";
     constexpr auto DEFAULT_PASS = "";
 

@@ -32,14 +32,12 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
     std::string runDriver = "mysql";
-    mongo::client::initialize();
- 
 
     // TODO: read these from response file
     po::options_description desc("Command line options");
     desc.add_options()
 	("help", "Help message")
-	("driver", po::value<string>(&runDriver)->default_value(""), "Driver: mysql or mongodb")
+	("driver", po::value<string>(&runDriver)->default_value(runDriver), "Driver: mysql or mongodb")
 	("mode", po::value<string>(&runMode)->default_value(""), "Mode - run or prepare (load "
 	    "initial dataset)")
         ("url",  po::value<string>(&Config::connHost)->default_value(Config::DEFAULT_HOST),
@@ -95,7 +93,24 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    if (vm.count("engine")) {
+    // url fixups
+    //
+    // if protocol wasn't specified make it tcp://
+    if (Config::connHost.find("://") == string::npos) {
+      Config::connHost.insert(0,"tcp://");
+    }
+    // mongodb only supports tcp
+    if (runDriver == "mongodb" &&
+        Config::connHost.find("tcp://") == string::npos) {
+        cout << "# ERR: The mongodb driver only supports tcp:// connection types." << endl;
+        return EXIT_FAILURE;
+    }
+
+    // report driver
+    cout << "Using Database Driver: " << runDriver << endl;
+
+    // storage engine cannot be specified at runtime for mongodb
+    if (vm.count("engine") && runDriver != "mongodb") {
 	cout << "Using Storage engine: "
 	    << vm["engine"].as<string>() << endl;
 	Config::storageEngine = vm["engine"].as<string>();
@@ -125,9 +140,9 @@ int main(int argc, const char **argv)
     GenericDriver *GenDrive;
 
     if (runDriver == "mysql") {
-	    GenDrive = new MySQLDriver(user, pass, database, url);
+        GenDrive = new MySQLDriver(user, pass, database, url);
     } else if (runDriver == "mongodb") {
-	    GenDrive = new MongoDBDriver(user, pass, database, url);
+	GenDrive = new MongoDBDriver(user, pass, database, url);
     }
 
     GenDrive->SetGenerator(&PG);

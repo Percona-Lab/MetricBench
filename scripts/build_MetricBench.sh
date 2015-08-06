@@ -19,6 +19,7 @@
 # david.bennett at percona.com - 6/9/2015
 
 BUILD_STATIC=0
+BUILD_TYPE=Debug
 
 # determine if we are running from inside of
 # the MetricBench repository or we are running
@@ -56,7 +57,8 @@ if [ ! -d "${BUILD_ROOT}" ]; then
     gcc-4.8 g++-4.8 \
     cmake make \
     libmysqlclient18 libmysqlclient-dev \
-    libbz2-dev
+    libbz2-dev \
+    scons
 
   # make gcc-4.8 the default
 
@@ -103,7 +105,8 @@ fi
 cd mysql-connector-cpp
 bzr revert -r1.1.5
 MYSQLCONNECTORCPP_ROOT_DIR=${BUILD_ROOT}/MetricBench_mysqlcpp
-if [ "$(find ${BUILD_ROOT}/MetricBench_mysqlcpp/ \( -name '*.a' -or -name '*.so' \) | wc -l)" == "0" ]; then
+if [ ! -d "${BUILD_ROOT}/MetricBench_mysqlcpp"] || \
+   [ "$(find ${BUILD_ROOT}/MetricBench_mysqlcpp/ \( -name '*.a' -or -name '*.so' \) | wc -l)" == "0" ]; then
   cmake -DMYSQLCLIENT_STATIC_BINDING:BOOL=1 -DCMAKE_INSTALL_PREFIX:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
   make install
 fi
@@ -118,7 +121,8 @@ fi
 cd mongo-cxx-driver
 git checkout legacy
 MONGO_LIB_ROOT_DIR=${BUILD_ROOT}/MetricBench_mongo-cxx-driver
-if [ "$(find ${MONGO_LIB_ROOT_DIR} \( -name '*.a' -or -name '*.so' \) | wc -l)" ]; then 
+if [ ! -d "${MONGO_LIB_ROOT_DIR}" ] || \
+   [ "$(find ${MONGO_LIB_ROOT_DIR} \( -name '*.a' -or -name '*.so' \) | wc -l)" == "0" ]; then
   if [ "${BUILD_STATIC}" -gt 0 ]; then
     scons --prefix=${MONGO_LIB_ROOT_DIR} --extrapath=${BOOST_ROOT} --dynamic-boost=off  --c++11 install
   else
@@ -141,12 +145,14 @@ fi
 cd ${MBROOT}/src
 ./clean.sh all
 if [ "${BUILD_STATIC}" -gt 0 ]; then
-  cmake -DBUILD_STATIC=1 -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
+  cmake -DBUILD_STATIC=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
 else
-  cmake -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} \
+  cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+        -DMYSQLCONNECTORCPP_ROOT_DIR:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} \
         -DMONGO_LIB_ROOT_DIR:PATH=${MONGO_LIB_ROOT_DIR}  .
 fi
-make
+make -j4
 
 # Epilogue 
 

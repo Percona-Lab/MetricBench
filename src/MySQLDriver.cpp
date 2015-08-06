@@ -104,6 +104,8 @@ void MySQLDriver::InsertData(int threadId) {
 		break;
 	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt);
 		break;
+            default:
+                break;
 	}
 
     }
@@ -111,17 +113,17 @@ void MySQLDriver::InsertData(int threadId) {
 }
 
 
-void MySQLDriver::InsertQuery(int threadId, 
-	unsigned int table_id, 
-	unsigned int timestamp, 
-	unsigned int device_id, 
+void MySQLDriver::InsertQuery(int threadId,
+	unsigned int table_id,
+	unsigned int timestamp,
+	unsigned int device_id,
 	sql::Statement & stmt) {
 
     stringstream sql,sql_val,sql_upd,sql_upd_val;
 
     try {
-    	std::random_device rd;
-    	std::mt19937 gen(rd());
+	std::random_device rd;
+	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
 
 	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
@@ -135,12 +137,12 @@ void MySQLDriver::InsertQuery(int threadId,
 	/* metrics loop */
 	std::unordered_set< int > s;
 	while (s.size() < metricsCnt) {
-	   auto size_b = s.size();
-	   auto mc = dis(gen);
-	   s.insert(mc);
-	   if (size_b==s.size()) { continue; }
-	  
-	//for (auto mc = 1; mc <= metricsCnt; mc++) {
+	    auto size_b = s.size();
+	    auto mc = dis(gen);
+	    s.insert(mc);
+	    if (size_b==s.size()) { continue; }
+
+            //for (auto mc = 1; mc <= metricsCnt; mc++) {
 	    if (notfirst) {
 		sql_val << ",";
 		sql_upd_val << ",";
