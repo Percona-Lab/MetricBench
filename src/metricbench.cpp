@@ -93,11 +93,24 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
+    // url fixups
+    //
+    // if protocol wasn't specified make it tcp://
+    if (Config::connHost.find("://") == string::npos) {
+      Config::connHost.insert(0,"tcp://");
+    }
+    // mongodb only supports tcp
+    if (runDriver == "mongodb" &&
+        Config::connHost.find("tcp://") == string::npos) {
+        cout << "# ERR: The mongodb driver only supports tcp:// connection types." << endl;
+        return EXIT_FAILURE;
+    }
+
     // report driver
     cout << "Using Database Driver: " << runDriver << endl;
 
     // storage engine cannot be specified at runtime for mongodb
-    if (vm.count("engine") && runDriver.compare("mongodb") != 0) {
+    if (vm.count("engine") && runDriver != "mongodb") {
 	cout << "Using Storage engine: "
 	    << vm["engine"].as<string>() << endl;
 	Config::storageEngine = vm["engine"].as<string>();
