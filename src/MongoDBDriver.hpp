@@ -33,6 +33,7 @@ public:
     virtual unsigned int getMaxDevIdForTS(unsigned int ts);
 
 private:
+    bool getConnection(mongo::DBClientConnection &);
     void InsertData(int threadId);
     void InsertQuery(int threadId,
 	unsigned int table_id,

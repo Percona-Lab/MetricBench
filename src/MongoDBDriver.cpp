@@ -9,6 +9,7 @@
 #include "tsqueue.hpp"
 #include "Config.hpp"
 #include "Message.hpp"
+#include "Uri.hpp"
 
 extern tsqueue<Message> tsQueue;
 extern tsqueue<StatMessage> statQueue;
@@ -28,6 +29,24 @@ MongoDBDriver::MongoDBDriver(const string user, const string pass,
     }
 }
 
+bool MongoDBDriver::getConnection(mongo::DBClientConnection &conn) {
+
+    Uri u = Uri::Parse(url);
+    int p=-1; // default
+    if (!u.Port.empty()) {
+        try {
+            p = stoi(u.Port,nullptr,10);
+        } catch(...) {
+        }
+    }
+
+    mongo::HostAndPort hp(u.Host,p);
+
+    std::string errmsg = url;
+
+    return(conn.connect(hp,errmsg));
+
+}
 
 void MongoDBDriver::Prep() {
     for (int i = 0; i < Config::LoaderThreads; i++) {
@@ -38,10 +57,8 @@ void MongoDBDriver::Prep() {
 
 void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 
-
     mongo::DBClientConnection c;
-
-    c.connect(url);
+    getConnection(c);
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
 	    std::thread threadInsertData([this,i](){ InsertData(i); });
@@ -66,7 +83,7 @@ void MongoDBDriver::InsertData(int threadId) {
     cout << "InsertData thread started" << endl;
 
     mongo::DBClientConnection c;
-    c.connect(url);
+    getConnection(c);
 
     Message m;
 
@@ -151,7 +168,7 @@ void MongoDBDriver::CreateSchema() {
 
 	try {
 		mongo::DBClientConnection c;
-		c.connect(url);
+                getConnection(c);
 		for (auto table=1; table <= Config::DBTables; table++)
 		{
 			c.dropCollection(database+".metrics"+std::to_string(table));
