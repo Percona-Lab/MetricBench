@@ -37,7 +37,7 @@ int main(int argc, const char **argv)
     po::options_description desc("Command line options");
     desc.add_options()
 	("help", "Help message")
-	("driver", po::value<string>(&runDriver)->default_value(""), "Driver: mysql or mongodb")
+	("driver", po::value<string>(&runDriver)->default_value(runDriver), "Driver: mysql or mongodb")
 	("mode", po::value<string>(&runMode)->default_value(""), "Mode - run or prepare (load "
 	    "initial dataset)")
         ("url",  po::value<string>(&Config::connHost)->default_value(Config::DEFAULT_HOST),
