@@ -93,7 +93,11 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    if (vm.count("engine")) {
+    // report driver
+    cout << "Using Database Driver: " << runDriver << endl;
+
+    // storage engine cannot be specified at runtime for mongodb
+    if (vm.count("engine") && runDriver.compare("mongodb") != 0) {
 	cout << "Using Storage engine: "
 	    << vm["engine"].as<string>() << endl;
 	Config::storageEngine = vm["engine"].as<string>();
