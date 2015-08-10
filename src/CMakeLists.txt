@@ -38,6 +38,7 @@ find_path(MYSQLCONNECTORCPP_INCLUDE_DIR
         mysql_connection.h
         HINTS
         ${MYSQLCONNECTORCPP_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mysqlcpp
         PATH_SUFFIXES
         include)
 
@@ -46,6 +47,7 @@ find_library(MYSQLCONNECTORCPP_LIBRARY
         ${MYSQLCPPCONN_LIB_NAME}
         HINTS
         ${MYSQLCONNECTORCPP_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mysqlcpp
         PATH_SUFFIXES
         lib64
         lib64/mysql
@@ -77,6 +79,7 @@ find_path(MONGO_LIB_INCLUDE_DIR
         mongo/client/dbclient.h
         HINTS
         ${MONGO_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mongo-cxx-driver
         PATH_SUFFIXES
         include)
 
@@ -85,6 +88,7 @@ find_library(MONGO_LIBRARY
         ${MONGO_LIB_NAME}
         HINTS
         ${MONGO_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mongo-cxx-driver
         PATH_SUFFIXES
         lib64
         lib
