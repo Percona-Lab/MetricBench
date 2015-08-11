@@ -26,6 +26,13 @@ else()
   set(BUILD_SHARED_LIBRARIES ON)
 endif()
 
+# Look for our build script boost and if it exists 
+# then set the BOOST_ROOT to point to it
+
+if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_boost" )
+  set(ENV{BOOST_ROOT} "${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_boost")
+endif()
+
 # Find the MySQL library locations
 
 set(MYSQLCONNECTORCPP_ROOT_DIR
