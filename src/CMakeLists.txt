@@ -128,7 +128,7 @@ add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 # MetricBench binary settings
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp MongoDBDriver.cpp 
-		Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp)
+  Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp SampledStats.cpp)
 
 set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
