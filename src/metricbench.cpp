@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <fstream>
 
 #include <thread>
 #include <chrono>
@@ -17,6 +18,7 @@
 #include "Message.hpp"
 #include "Stats.hpp"
 #include "LatencyStats.hpp"
+#include "SampledStats.hpp"
 
 using namespace std;
 
@@ -60,10 +62,10 @@ int main(int argc, const char **argv)
             "Set storage engine")
 	("engine-extra", po::value<string>(), "Extra storage engine options, e.g. "
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
-
         ("csvstats", po::value<string>(&Config::csvStatsFile), "CSV final summary stats file.")
-        ("csvstreams", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
-
+        ("csvstream", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
+        ("maxsamples", po::value<int64_t>(&Config::maxsamples)->default_value(Config::DEFAULT_MAXSAMPLES),
+            "Maximum number of samples to store for each per-thread statistic")
         ("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
 	    "'SET tokudb_read_block_size=32K'")
 	;
@@ -133,6 +135,19 @@ int main(int argc, const char **argv)
 
     LatencyStats latencyStats(Config::LoaderThreads);
 
+
+    // csvstream (SampledStats)
+    std::ofstream csvstream;
+    if (Config::csvStreamingStatsFile.compare("")) {
+      csvstream.open(Config::csvStreamingStatsFile,
+                     std::ofstream::out | std::ofstream::app);
+      if (csvstream.fail()) {
+        cout << "# ERR: Could not open --csvstream file for output: " <<
+          Config::csvStreamingStatsFile << std::endl;
+        return EXIT_FAILURE;
+      }
+    }
+
     /* prepare routine */
 
     ParetoGenerator PG(1.04795);
@@ -147,6 +162,11 @@ int main(int argc, const char **argv)
 
     GenDrive->SetGenerator(&PG);
     GenDrive->setLatencyStats(&latencyStats);
+
+    if (csvstream.is_open()) {
+      SampledStats::writeCSVHeader(csvstream);
+      GenDrive->setOstreamSampledStats(&csvstream);
+    }
 
     Preparer Runner(GenDrive);
     Runner.SetGenerator(&PG);

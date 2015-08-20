@@ -23,6 +23,8 @@ namespace Config
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 
+    constexpr int64_t DEFAULT_MAXSAMPLES = 10000;
+
     extern std::string connDb;
     extern std::string connHost;
     extern std::string connUser;
@@ -51,4 +53,6 @@ namespace Config
 
     extern std::string csvStatsFile;
     extern std::string csvStreamingStatsFile;
+
+    extern int64_t maxsamples;  // maximum samples to store for each per-thread statistic
 }

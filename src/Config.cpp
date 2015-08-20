@@ -13,7 +13,7 @@ namespace Config
     std::string storageEngineExtra = "";
 
     std::string preCreateStatement = "";
-    
+
     std::string connDb = Config::DEFAULT_DB;
     std::string connHost = Config::DEFAULT_HOST;
     std::string connUser = Config::DEFAULT_USER;
@@ -23,4 +23,6 @@ namespace Config
 
     std::string csvStatsFile = "";
     std::string csvStreamingStatsFile = "";
+
+    int64_t maxsamples = DEFAULT_MAXSAMPLES;
 }
