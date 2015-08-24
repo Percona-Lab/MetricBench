@@ -8,8 +8,6 @@ enum  RunModeE { PREPARE = 1, RUN };
 /* Connection parameter and sample data */
 namespace Config
 {
-
-
     constexpr auto DEFAULT_DB = "test" ;
     constexpr auto DEFAULT_HOST = "tcp://localhost";
     constexpr auto DEFAULT_USER = "root";
@@ -55,4 +53,8 @@ namespace Config
     extern std::string csvStreamingStatsFile;
 
     extern int64_t maxsamples;  // maximum samples to store for each per-thread statistic
+
+    constexpr unsigned int DEFAULT_RANDOM_SEED=0;
+    extern unsigned int randomSeed;
+
 }

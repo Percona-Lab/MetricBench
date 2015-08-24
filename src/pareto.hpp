@@ -3,6 +3,8 @@
 #include <random>
 #include <stdexcept>
 
+#include "Config.hpp"
+
 /* based on an article "Power laws, Pareto distributions and Zipf's law" M. E. J. Newman */
 /* pareto_h = 1.16096 corresponds to 80-20 rule
 1.002187 : 99-1 rule
@@ -19,6 +21,13 @@ class ParetoGenerator {
 
 public:
     ParetoGenerator(double h) :pareto_h{h} {
+        unsigned int seed=Config::randomSeed;
+        if (!seed) {
+          std::random_device rd;
+          seed=rd();
+        }
+        generator.seed(seed);
+
 	if (h <= 1) { throw std::runtime_error("Incorrect Pareto alpha"); }
 	pareto_power = -1 / (h-1); }
 

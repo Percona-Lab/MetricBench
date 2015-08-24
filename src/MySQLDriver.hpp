@@ -32,7 +32,7 @@ public:
     MySQLDriver(const string user,
 	    const string pass,
 	    const string database,
-	    const string url) : 
+	    const string url) :
 		GenericDriver(user,
 		    pass,
 		    database,
@@ -47,10 +47,10 @@ public:
 
 private:
     void InsertData(int threadId);
-    void InsertQuery(int threadId, 
+    void InsertQuery(int threadId,
 	unsigned int table_id,
-	unsigned int timestamp, 
-	unsigned int device_id, 
+	unsigned int timestamp,
+	unsigned int device_id,
 	sql::Statement & stmt);
     void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
 };

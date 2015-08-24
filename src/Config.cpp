@@ -25,4 +25,6 @@ namespace Config
     std::string csvStreamingStatsFile = "";
 
     int64_t maxsamples = DEFAULT_MAXSAMPLES;
+
+    unsigned int randomSeed=DEFAULT_RANDOM_SEED;
 }

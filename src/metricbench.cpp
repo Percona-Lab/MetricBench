@@ -68,6 +68,8 @@ int main(int argc, const char **argv)
             "Maximum number of samples to store for each per-thread statistic")
         ("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
 	    "'SET tokudb_read_block_size=32K'")
+        ("random-seed", po::value<unsigned int>(&Config::randomSeed)->default_value(Config::DEFAULT_RANDOM_SEED),
+            "Random seed for pseudo-random numbers\n" "(0 = non-deterministic seed)")
 	;
 
     po::variables_map vm;

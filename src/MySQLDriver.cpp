@@ -122,8 +122,12 @@ void MySQLDriver::InsertQuery(int threadId,
     stringstream sql,sql_val,sql_upd,sql_upd_val;
 
     try {
-	std::random_device rd;
-	std::mt19937 gen(rd());
+        unsigned int seed=Config::randomSeed;
+        if (!seed) {
+          std::random_device rd;
+          seed=rd();
+        }
+	std::mt19937 gen(seed);
 	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
 
 	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
