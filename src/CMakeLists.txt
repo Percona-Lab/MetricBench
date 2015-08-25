@@ -122,7 +122,7 @@ find_package_handle_standard_args(MysqlConnectorCpp
 
 # Global compiler flags
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -pedantic ${CXX_BUILD_FLAGS}")
+set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 ${CXX_BUILD_FLAGS}")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 # MetricBench binary settings
