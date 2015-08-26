@@ -71,7 +71,7 @@ int main(int argc, const char **argv)
         ("random-seed", po::value<unsigned int>(&Config::randomSeed)->default_value(Config::DEFAULT_RANDOM_SEED),
             "Random seed for pseudo-random numbers\n" "(0 = non-deterministic seed)")
         ("displayfreq", po::value<int>(&Config::displayFreq)->default_value(Config::DEFAULT_DISPLAY_FREQ),
-            "Statistics display frequency in seconds")
+            "Statistics display frequency in seconds, for standard output and CSV streaming.")
 	;
 
     po::variables_map vm;

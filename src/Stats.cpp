@@ -1,14 +1,5 @@
 #include "Stats.hpp"
 
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <algorithm>
-
-#include "tsqueue.hpp"
-
-#include "Message.hpp"
-
 extern tsqueue<StatMessage> statQueue;
 
 unsigned long percentile(std::vector<unsigned long> &vectorIn, double percent)
@@ -21,11 +12,11 @@ unsigned long percentile(std::vector<unsigned long> &vectorIn, double percent)
 void Stats::statsPrint() {
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    
+
     unsigned long totalInserted = 0;
- 
+
     while (true) {
-	std::this_thread::sleep_for (std::chrono::seconds(10));
+	std::this_thread::sleep_for (std::chrono::seconds(Config::displayFreq));
 	auto t1 = std::chrono::high_resolution_clock::now();
 	auto secFromStart = std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count();
 
@@ -43,7 +34,7 @@ void Stats::statsPrint() {
 		std::end(execTimes[InsertMetric]));
 	    biggest = *tmp;
 	}
-	
+
 	totalInserted += cnts;
 
 	std::cout << std::fixed << std::setprecision(2)
