@@ -25,10 +25,13 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
-    { /* block for ResultSet ptr */
+    for (auto table=1; table <= Config::DBTables; table++) {
+        std::string sqlCmd = "SELECT "
+          "unix_timestamp(min(ts)) mints,unix_timestamp(max(ts)) maxts FROM metrics" +
+          std::to_string(table);
+
 	std::unique_ptr< sql::ResultSet >
-	    res(stmt->executeQuery("SELECT "
-			"unix_timestamp(min(ts)) mints,unix_timestamp(max(ts)) maxts FROM metrics"));
+	    res(stmt->executeQuery(sqlCmd));
 
 	if (res->next()) {
 	    minTs = res->getUInt("mints");
@@ -38,7 +41,8 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 		<< ", MaxTS: " << maxTs
 		<< ", Range: "<< (maxTs-minTs) << endl;
 	} else {
-	    throw std::runtime_error ("SELECT timestamp from metrics returns no result");
+            std::string errStr="SELECT timestamp from metrics returns no result" + std::to_string(table);
+	    throw std::runtime_error (errStr);
 	}
     }
 
@@ -60,15 +64,16 @@ unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
 
     unsigned int maxDevID = 0;
 
-    { /* block for ResultSet ptr */
+    for (auto table=1; table <= Config::DBTables; table++) {
         stringstream sql;
 	sql.str("");
-	sql << "SELECT max(device_id) maxdev FROM metrics "
-	    << "WHERE ts=from_unixtime(" << ts << ")";
+	sql << "SELECT max(device_id) maxdev FROM metrics"
+            << table
+	    << " WHERE ts=from_unixtime(" << ts << ")";
 	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
 
 	if (res->next()) {
-	    maxDevID = res->getUInt("maxdev");
+	    maxDevID = std::max(maxDevID, res->getUInt("maxdev"));
 	}
     }
 
@@ -103,7 +108,7 @@ void MySQLDriver::InsertData(int threadId, const std::vector<int> & showStats) {
 	switch(m.op) {
 	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
 		break;
-	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, *stmt, stats);
+	    case Delete: DeleteQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
 		break;
             default:
                 break;
@@ -232,6 +237,7 @@ void MySQLDriver::InsertQuery(int threadId,
 }
 
 void MySQLDriver::DeleteQuery(int threadId,
+                              unsigned int table_id,
                               unsigned int timestamp,
                               unsigned int device_id,
                               sql::Statement & stmt,
@@ -243,7 +249,7 @@ void MySQLDriver::DeleteQuery(int threadId,
     try {
 
 	sql.str("");
-	sql << "DELETE FROM metrics WHERE ts=from_unixtime(" << timestamp << ")"
+	sql << "DELETE FROM metrics"<<table_id<<" WHERE ts=from_unixtime(" << timestamp << ")"
 	    << " AND device_id=" << device_id;
 
 	t0 = std::chrono::high_resolution_clock::now();
