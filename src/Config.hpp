@@ -8,8 +8,6 @@ enum  RunModeE { PREPARE = 1, RUN };
 /* Connection parameter and sample data */
 namespace Config
 {
-
-
     constexpr auto DEFAULT_DB = "test" ;
     constexpr auto DEFAULT_HOST = "tcp://localhost";
     constexpr auto DEFAULT_USER = "root";
@@ -22,6 +20,8 @@ namespace Config
     constexpr unsigned int DEFAULT_MAXDEVICES = 1000;
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
+
+    constexpr int DEFAULT_MAXSAMPLES = 10000;
 
     extern std::string connDb;
     extern std::string connHost;
@@ -51,4 +51,13 @@ namespace Config
 
     extern std::string csvStatsFile;
     extern std::string csvStreamingStatsFile;
+
+    extern int maxsamples;  // maximum samples to store for each per-thread statistic
+
+    constexpr unsigned int DEFAULT_RANDOM_SEED=0;
+    extern unsigned int randomSeed;
+
+    constexpr int DEFAULT_DISPLAY_FREQ=10;
+    extern int displayFreq;  // display frequency
+
 }

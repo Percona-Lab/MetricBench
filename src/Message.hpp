@@ -18,8 +18,8 @@ public:
     unsigned int ts = 0;
     unsigned int device_id =0;
     unsigned int table_id =0;
-    Message(MessageType o, 
-	unsigned int t, 
+    Message(MessageType o,
+	unsigned int t,
 	unsigned int d,
 	unsigned int tab) :op(o),ts(t),device_id(d),table_id(tab) {}
     Message() {}

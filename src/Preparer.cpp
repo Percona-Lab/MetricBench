@@ -25,12 +25,12 @@ void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const
 
 	cout << std::fixed << std::setprecision(2)
 	    << "[Progress] Time: " << secFromStart << "[sec], "
-	    << "Progress: " << insertProgress 
+	    << "Progress: " << insertProgress
 	    << "/" << total << " = "
 	    << static_cast<double> (insertProgress - startTs) * 100 / (total)
 	    << "%, "
 	    << "Time left: " << estTotalTime - secFromStart << "[sec] "
-	    << "Est total: " << estTotalTime << "[sec]" 
+	    << "Est total: " << estTotalTime << "[sec]"
 	    << endl;
     }
 

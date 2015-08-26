@@ -49,19 +49,24 @@ bool MongoDBDriver::getConnection(mongo::DBClientConnection &conn) {
 }
 
 void MongoDBDriver::Prep() {
+    const int ls[] = {MessageType::InsertMetric};
+    const std::vector<int> loadStats(ls, end(ls));
+
     for (int i = 0; i < Config::LoaderThreads; i++) {
-        std::thread threadInsertData([this,i](){ InsertData(i); });
+        std::thread threadInsertData([this,i,loadStats](){ InsertData(i,loadStats); });
 	threadInsertData.detach();
     }
 }
 
 void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
+    const int ls[] = {MessageType::InsertMetric,MessageType::DeleteDevice};
+    const std::vector<int> runStats(ls, end(ls));
 
     mongo::DBClientConnection c;
     getConnection(c);
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
-	    std::thread threadInsertData([this,i](){ InsertData(i); });
+	    std::thread threadInsertData([this,i,runStats](){ InsertData(i,runStats); });
 	    threadInsertData.detach();
     }
 
@@ -79,7 +84,7 @@ unsigned int MongoDBDriver::getMaxDevIdForTS(unsigned int ts) {
 
 /* This thread waits for a signal to handle timestamp event.
 For a given timestamp it loads N devices, each reported M metrics */
-void MongoDBDriver::InsertData(int threadId) {
+void MongoDBDriver::InsertData(int threadId, const std::vector<int> & showStats) {
     cout << "InsertData thread started" << endl;
 
     mongo::DBClientConnection c;
@@ -87,21 +92,44 @@ void MongoDBDriver::InsertData(int threadId) {
 
     Message m;
 
+    SampledStats stats(threadId, Config::maxsamples, *ostreamSampledStats);
+
+    int64_t lastDisplayTime =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch()
+      ).count();
+
     while(true) { // TODO:: have a boolean flag to stop
 	/* wait on a event from queue */
 	tsQueue.wait_and_pop(m);
 
 	switch(m.op) {
-	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, c);
+	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, c, stats);
 		break;
-	    case Delete: DeleteQuery(threadId, m.ts, m.device_id);
+	    case Delete: DeleteQuery(threadId, m.ts, m.device_id, c, stats);
 		break;
             default:
                 break;
 	}
 
+        int64_t endTime =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch()
+            ).count();
+
+        if (endTime - lastDisplayTime > Config::displayFreq * 1000) {
+          stats.displayStats(lastDisplayTime, endTime, showStats);
+          lastDisplayTime = endTime;
+        }
+
     }
 
+    int64_t endTime =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch()
+      ).count();
+
+    stats.displayStats(lastDisplayTime, endTime, showStats);
 
 }
 
@@ -109,55 +137,67 @@ void MongoDBDriver::InsertData(int threadId) {
 void MongoDBDriver::InsertQuery(int threadId,
 	unsigned int table_id,
 	unsigned int timestamp,
-	unsigned int device_id, mongo::DBClientConnection &mongo) {
+	unsigned int device_id, mongo::DBClientConnection & mongo,
+        SampledStats & stats) {
 
     std::vector<mongo::BSONObj> bulk_data;
 
-	//auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
+    //auto metricsCnt = PGen->GetNext(Config::MaxMetrics, 0);
+    unsigned int seed=Config::randomSeed;
+    if (!seed) {
+        std::random_device rd;
+        seed=rd();
+    }
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
 
-	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
+    auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
 
-
-	/* metrics loop */
-	std::unordered_set< int > s;
-	while (s.size() < metricsCnt) {
-	   auto size_b = s.size();
-	   auto mc = dis(gen);
-	   s.insert(mc);
-	   if (size_b==s.size()) { continue; }
-	//for (auto mc = 1; mc <= metricsCnt; mc++) {
-		auto v = PGen->GetNext(0.0, Config::MaxValue);
-		mongo::BSONObj record = BSON (
-                "ts" << timestamp <<
-		"device_id" << device_id <<
-		"metric_id" << mc <<
-		"cnt" << PGen->GetNext(Config::MaxCnt, 0) <<
-		"value" << (v < 0.5 ? 0 : v) );
-
-                bulk_data.push_back(record);
-
-	}
-
-
-	auto t0 = std::chrono::high_resolution_clock::now();
-	mongo.insert(database+".metrics"+std::to_string(table_id), bulk_data);
-	bulk_data.clear();
-	auto t1 = std::chrono::high_resolution_clock::now();
-	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
-
-        if (latencyStats) {
-          latencyStats->recordLatency(threadId, InsertMetric, time_us);
+    /* metrics loop */
+    std::unordered_set< int > s;
+    while (s.size() < metricsCnt) {
+        auto size_b = s.size();
+        auto mc = dis(gen);
+        s.insert(mc);
+        if (size_b==s.size()) {
+            continue;
         }
+        auto v = PGen->GetNext(0.0, Config::MaxValue);
+        mongo::BSONObj record = BSON (
+            "ts" << timestamp <<
+            "device_id" << device_id <<
+            "metric_id" << mc <<
+            "cnt" << PGen->GetNext(Config::MaxCnt, 0) <<
+            "value" << (v < 0.5 ? 0 : v)
+        );
 
-	StatMessage sm(InsertMetric, time_us, metricsCnt);
-	statQueue.push(sm);
+        bulk_data.push_back(record);
+    }
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    mongo.insert(database+".metrics"+std::to_string(table_id), bulk_data);
+    bulk_data.clear();
+    auto t1 = std::chrono::high_resolution_clock::now();
+    auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+
+    if (latencyStats) {
+        latencyStats->recordLatency(threadId, InsertMetric, time_us);
+    }
+
+    if (ostreamSampledStats) {
+        stats.addStats(InsertMetric, time_us/1000, false);
+    }
+
+    StatMessage sm(InsertMetric, time_us, metricsCnt);
+    statQueue.push(sm);
 
 }
 
-void MongoDBDriver::DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id) {
+void MongoDBDriver::DeleteQuery(int threadId,
+                                unsigned int timestamp,
+                                unsigned int device_id,
+                                mongo::DBClientConnection & mongo,
+                                SampledStats & stats) {
 
 
 }

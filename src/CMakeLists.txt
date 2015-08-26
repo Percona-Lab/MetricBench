@@ -26,6 +26,13 @@ else()
   set(BUILD_SHARED_LIBRARIES ON)
 endif()
 
+# Look for our build script boost and if it exists 
+# then set the BOOST_ROOT to point to it
+
+if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_boost" )
+  set(ENV{BOOST_ROOT} "${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_boost")
+endif()
+
 # Find the MySQL library locations
 
 set(MYSQLCONNECTORCPP_ROOT_DIR
@@ -38,6 +45,7 @@ find_path(MYSQLCONNECTORCPP_INCLUDE_DIR
         mysql_connection.h
         HINTS
         ${MYSQLCONNECTORCPP_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mysqlcpp
         PATH_SUFFIXES
         include)
 
@@ -46,6 +54,7 @@ find_library(MYSQLCONNECTORCPP_LIBRARY
         ${MYSQLCPPCONN_LIB_NAME}
         HINTS
         ${MYSQLCONNECTORCPP_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mysqlcpp
         PATH_SUFFIXES
         lib64
         lib64/mysql
@@ -77,6 +86,7 @@ find_path(MONGO_LIB_INCLUDE_DIR
         mongo/client/dbclient.h
         HINTS
         ${MONGO_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mongo-cxx-driver
         PATH_SUFFIXES
         include)
 
@@ -85,6 +95,7 @@ find_library(MONGO_LIBRARY
         ${MONGO_LIB_NAME}
         HINTS
         ${MONGO_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_mongo-cxx-driver
         PATH_SUFFIXES
         lib64
         lib
@@ -111,13 +122,13 @@ find_package_handle_standard_args(MysqlConnectorCpp
 
 # Global compiler flags
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -pedantic ${CXX_BUILD_FLAGS}")
+set(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 ${CXX_BUILD_FLAGS}")
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 
 # MetricBench binary settings
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp MongoDBDriver.cpp 
-		Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp)
+  Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp SampledStats.cpp)
 
 set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
