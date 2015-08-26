@@ -24,7 +24,9 @@ namespace Config
     std::string csvStatsFile = "";
     std::string csvStreamingStatsFile = "";
 
-    int64_t maxsamples = DEFAULT_MAXSAMPLES;
+    int maxsamples = DEFAULT_MAXSAMPLES;
 
     unsigned int randomSeed=DEFAULT_RANDOM_SEED;
+
+    int displayFreq = DEFAULT_DISPLAY_FREQ;
 }

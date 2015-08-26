@@ -64,12 +64,14 @@ int main(int argc, const char **argv)
 	    "'ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8'")
         ("csvstats", po::value<string>(&Config::csvStatsFile), "CSV final summary stats file.")
         ("csvstream", po::value<string>(&Config::csvStreamingStatsFile), "CSV periodic streaming stats file.")
-        ("maxsamples", po::value<int64_t>(&Config::maxsamples)->default_value(Config::DEFAULT_MAXSAMPLES),
+        ("maxsamples", po::value<int>(&Config::maxsamples)->default_value(Config::DEFAULT_MAXSAMPLES),
             "Maximum number of samples to store for each per-thread statistic")
         ("pre-create", po::value<string>(), "statement(s) to execute before creating table, e.g. "
 	    "'SET tokudb_read_block_size=32K'")
         ("random-seed", po::value<unsigned int>(&Config::randomSeed)->default_value(Config::DEFAULT_RANDOM_SEED),
             "Random seed for pseudo-random numbers\n" "(0 = non-deterministic seed)")
+        ("displayfreq", po::value<int>(&Config::displayFreq)->default_value(Config::DEFAULT_DISPLAY_FREQ),
+            "Statistics display frequency in seconds")
 	;
 
     po::variables_map vm;
@@ -142,7 +144,7 @@ int main(int argc, const char **argv)
     std::ofstream csvstream;
     if (Config::csvStreamingStatsFile.compare("")) {
       csvstream.open(Config::csvStreamingStatsFile,
-                     std::ofstream::out | std::ofstream::app);
+                     std::ofstream::out);
       if (csvstream.fail()) {
         cout << "# ERR: Could not open --csvstream file for output: " <<
           Config::csvStreamingStatsFile << std::endl;

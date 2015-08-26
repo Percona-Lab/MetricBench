@@ -11,10 +11,11 @@
 #include "mongo/client/dbclient.h"
 #include "mongo/client/index_spec.h"
 
-#include "pareto.hpp"
 #include "Config.hpp"
-#include "LatencyStats.hpp"
 #include "GenericDriver.hpp"
+#include "LatencyStats.hpp"
+#include "pareto.hpp"
+#include "SampledStats.hpp"
 
 using namespace std;
 
@@ -34,10 +35,16 @@ public:
 
 private:
     bool getConnection(mongo::DBClientConnection &);
-    void InsertData(int threadId);
+    void InsertData(int threadId, const std::vector<int> &);
     void InsertQuery(int threadId,
 	unsigned int table_id,
 	unsigned int timestamp,
-	unsigned int device_id,  mongo::DBClientConnection &mongo);
-    void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id);
+	unsigned int device_id,
+        mongo::DBClientConnection & mongo,
+        SampledStats & stats);
+    void DeleteQuery(int threadId,
+        unsigned int timestamp,
+        unsigned int device_id,
+        mongo::DBClientConnection & mongo,
+        SampledStats & stats);
 };

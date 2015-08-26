@@ -1,12 +1,20 @@
 #pragma once
 
+#include <atomic>
+#include <boost/lockfree/queue.hpp>
+#include <chrono>
 #include <cstddef>
-#include <stdlib.h>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <stdlib.h>
 #include <string>
+#include <thread>
+#include <unordered_set>
+
+#include "mysql_driver.h"
+#include "mysql_connection.h"
 
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
@@ -16,18 +24,19 @@
 #include <cppconn/resultset.h>
 #include <cppconn/resultset_metadata.h>
 #include <cppconn/statement.h>
-/*#include <cppconn/connection.h"*/
-#include "mysql_driver.h"
-#include "mysql_connection.h"
 
-#include "pareto.hpp"
 #include "Config.hpp"
-#include "LatencyStats.hpp"
 #include "GenericDriver.hpp"
+#include "LatencyStats.hpp"
+#include "Message.hpp"
+#include "pareto.hpp"
+#include "SampledStats.hpp"
+#include "tsqueue.hpp"
 
 using namespace std;
 
 class MySQLDriver : public GenericDriver {
+
 public:
     MySQLDriver(const string user,
 	    const string pass,
@@ -46,11 +55,17 @@ public:
     virtual unsigned int getMaxDevIdForTS(unsigned int ts);
 
 private:
-    void InsertData(int threadId);
+    void InsertData(const int threadId, const std::vector<int> &);
     void InsertQuery(int threadId,
 	unsigned int table_id,
 	unsigned int timestamp,
 	unsigned int device_id,
-	sql::Statement & stmt);
-    void DeleteQuery(int threadId, unsigned int timestamp, unsigned int device_id, sql::Statement & stmt);
+	sql::Statement & stmt,
+        SampledStats & stats);
+    void DeleteQuery(int threadId,
+                     unsigned int timestamp,
+                     unsigned int device_id,
+                     sql::Statement & stmt,
+                     SampledStats & stats);
+
 };

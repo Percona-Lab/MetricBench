@@ -20,9 +20,15 @@
 
 #include "SampledStats.hpp"
 
-char srand_init=0;
+// define the lock
+std::mutex SampledStats::line_lock;
 
-SampledStats::SampledStats(int32_t input_threadID, int32_t input_maxsamples, std::ostream &input_csvOutput) :
+// random numbers
+char srand_init=0;
+std::mt19937 gen;
+std::uniform_real_distribution<double> unif;
+
+SampledStats::SampledStats(int input_threadID, int input_maxsamples, std::ostream &input_csvOutput) :
     threadID(input_threadID),
     maxsamples(input_maxsamples),
     csvOutput(input_csvOutput),
@@ -30,12 +36,22 @@ SampledStats::SampledStats(int32_t input_threadID, int32_t input_maxsamples, std
 {
     // init srand - used to decide which to include in sample
     if (!srand_init) {
-      srand((unsigned int) time (NULL));
+      unsigned int seed=Config::randomSeed;
+      if (!seed) {
+        std::random_device rd;
+        seed=rd();
+      }
+      std::mt19937 gen(seed);
+      std::uniform_real_distribution<double> unif(0, 1);
       srand_init++;
     }
-
 }
 
+/**
+ * MessageType - SQL Operation
+ * timetaken - time in milliseconds (10-3)
+ * error was there an error?
+ */
 void SampledStats::addStats(MessageType type, int64_t timetaken, bool error) {
 
     if (error) {
@@ -60,7 +76,7 @@ void SampledStats::addStats(MessageType type, int64_t timetaken, bool error) {
         // Replacing with the probability guarantees that each measurement
         // has an equal probability of being included in the sample
         double pReplace = ((double)maxsamples) / opIndex;
-        double probability = ((double)rand() / (RAND_MAX));
+        double probability = unif(gen);
         if (probability < pReplace) {
           // Select sample to replace randomly
           int32_t rSample = rand()%maxsamples;
@@ -88,13 +104,21 @@ void SampledStats::displayStats(MessageType type, int32_t start, int32_t end,
     int64_t sampleDuration = nowTime_ms - sampleStartTime_ms;
 
     if (elems <= 0) {
-      // TODO: log
-      csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
-          "," << numops[type] << "," << errors[type] <<
-          "," << 0 << "," << sampleDuration <<
-          ",0,,,,,,,,," << std::endl;
+
+        // thread lock to prevent output contention
+        std::lock_guard<std::mutex> lock(line_lock);
+
+        // TODO: log
+        csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
+            "," << numops[type] << "," << errors[type] <<
+            "," << 0 << "," << sampleDuration <<
+            ",0,,,,,,,,," << std::endl;
+
+        return;
     }
-    return;
+
+    // thread lock to prevent output contention
+    std::lock_guard<std::mutex> lock(line_lock);
 
     // sort  from start (inclusive) to end (exclusive)
     std::sort(samples[type].begin() + start, samples[type].begin() + end);
@@ -114,6 +138,8 @@ void SampledStats::displayStats(MessageType type, int32_t start, int32_t end,
     int64_t max = samples[type][end - 1];
     double mean = meanCalc->mean();
 
+    delete meanCalc;
+
     // TODO: log
 
     csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
@@ -132,7 +158,7 @@ void SampledStats::displayStatsAll(int64_t sampleStartTime_ms, int64_t nowTime_m
     displayStats(sampleStartTime_ms, nowTime_ms, msgTypes);
 }
 
-void SampledStats::displayStats(int64_t sampleStartTime_ms, int64_t nowTime_ms, std::vector<int> &msgTypes) {
+void SampledStats::displayStats(int64_t sampleStartTime_ms, int64_t nowTime_ms, const std::vector<int> &msgTypes) {
     for (int type : msgTypes) {
         displayStats(static_cast<MessageType>(type), 0, std::min(maxsamples,opsSinceReset[type]),
                 sampleStartTime_ms, nowTime_ms);

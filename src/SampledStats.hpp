@@ -9,12 +9,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
 #include <string>
 
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
 
+#include "Config.hpp"
 #include "Message.hpp"
 #include "RunningMean.hpp"
 
@@ -57,13 +59,16 @@ private:
     // Stream to write csv output to ( null if no csv output )
     std::ostream &csvOutput;
 
+    // line output lock
+    static std::mutex line_lock;
+
 public:
-    SampledStats(int32_t, int32_t, std::ostream &);
+    SampledStats(int, int, std::ostream &);
     void addStats(MessageType, int64_t, bool);
     void resetSamples();
     void displayStats(MessageType, int32_t, int32_t, int64_t, int64_t);
     void displayStatsAll(int64_t, int64_t);
-    void displayStats(int64_t, int64_t, std::vector<int> &);
+    void displayStats(int64_t, int64_t, const std::vector<int> &);
     int64_t getCount(MessageType);
 
     static void writeCSVHeader(std::ostream &);

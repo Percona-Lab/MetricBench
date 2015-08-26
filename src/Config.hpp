@@ -21,7 +21,7 @@ namespace Config
 
     constexpr auto DEFAULT_STORAGE_ENGINE = "InnoDB";
 
-    constexpr int64_t DEFAULT_MAXSAMPLES = 10000;
+    constexpr int DEFAULT_MAXSAMPLES = 10000;
 
     extern std::string connDb;
     extern std::string connHost;
@@ -52,9 +52,12 @@ namespace Config
     extern std::string csvStatsFile;
     extern std::string csvStreamingStatsFile;
 
-    extern int64_t maxsamples;  // maximum samples to store for each per-thread statistic
+    extern int maxsamples;  // maximum samples to store for each per-thread statistic
 
     constexpr unsigned int DEFAULT_RANDOM_SEED=0;
     extern unsigned int randomSeed;
+
+    constexpr int DEFAULT_DISPLAY_FREQ=10;
+    extern int displayFreq;  // display frequency
 
 }

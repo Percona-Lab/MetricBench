@@ -11,6 +11,7 @@
 #include "pareto.hpp"
 #include "Config.hpp"
 #include "LatencyStats.hpp"
+#include "SampledStats.hpp"
 
 using namespace std;
 
@@ -22,6 +23,7 @@ protected:
     const string url;
     ParetoGenerator* PGen;
     LatencyStats* latencyStats;
+    std::ostream* ostreamSampledStats;
 
     /* range between first and last records in metrics */
     unsigned int tsRange;
@@ -34,9 +36,11 @@ public:
 		    pass(pass),
 		    database(database),
 		    url(url),
-                    latencyStats((LatencyStats *)nullptr) {}
+                    latencyStats((LatencyStats *)nullptr),
+                    ostreamSampledStats((std::ostream *)nullptr) {}
     void SetGenerator(ParetoGenerator* PG) { PGen=PG; }
     void setLatencyStats(LatencyStats* ls) { latencyStats = ls; }
+    void setOstreamSampledStats(std::ostream* osss) { ostreamSampledStats  = osss; }
 
     /* functions to redefine in Driver implementation */
     virtual void Prep() = 0;
