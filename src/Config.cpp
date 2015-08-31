@@ -29,4 +29,9 @@ namespace Config
     unsigned int randomSeed=DEFAULT_RANDOM_SEED;
 
     int displayFreq = DEFAULT_DISPLAY_FREQ;
+
+    bool processingComplete = false;
+
+    std::string logLevel = DEFAULT_LOG_LEVEL;
+    std::string logFile = DEFAULT_LOG_FILE;
 }

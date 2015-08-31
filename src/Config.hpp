@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+
 using namespace std;
 
 enum  RunModeE { PREPARE = 1, RUN };
@@ -28,7 +29,7 @@ namespace Config
     extern std::string connUser;
     extern std::string connPass;
 
-    constexpr unsigned int StartTimestamp = 946684800;
+    constexpr uint64_t StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
     // TODO:  Make these configurable
@@ -42,7 +43,6 @@ namespace Config
     extern unsigned int LoaderThreads;
     extern unsigned int DBTables;
     extern unsigned int MaxDevices;
-
     extern std::string storageEngine;
     extern std::string storageEngineExtra;
     extern std::string preCreateStatement;
@@ -59,5 +59,16 @@ namespace Config
 
     constexpr int DEFAULT_DISPLAY_FREQ=10;
     extern int displayFreq;  // display frequency
+
+    // used to instruct driver threads to exit
+    extern bool processingComplete;
+
+    // log level
+    constexpr auto DEFAULT_LOG_LEVEL = "info";
+    extern std::string logLevel;
+
+    // log file
+    constexpr auto DEFAULT_LOG_FILE = "-";   // - for stdout
+    extern std::string logFile;
 
 }
