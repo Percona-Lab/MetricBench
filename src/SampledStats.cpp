@@ -99,54 +99,58 @@ void SampledStats::resetSamples() {
 
 void SampledStats::displayStats(MessageType type, int32_t start, int32_t end,
                 int64_t sampleStartTime_ms, int64_t nowTime_ms) {
-    int32_t elems = end - start;
-    int64_t timestamp = nowTime_ms / 1000;
-    int64_t sampleDuration = nowTime_ms - sampleStartTime_ms;
 
-    if (elems <= 0) {
+    if (csvOutput) {
+
+        int32_t elems = end - start;
+        int64_t timestamp = nowTime_ms / 1000;
+        int64_t sampleDuration = nowTime_ms - sampleStartTime_ms;
+
+        if (elems <= 0) {
+
+            // thread lock to prevent output contention
+            std::lock_guard<std::mutex> lock(line_lock);
+
+            // TODO: log
+            csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
+                "," << numops[type] << "," << errors[type] <<
+                "," << 0 << "," << sampleDuration <<
+                ",0,,,,,,,,," << std::endl;
+
+            return;
+        }
 
         // thread lock to prevent output contention
         std::lock_guard<std::mutex> lock(line_lock);
 
+        // sort  from start (inclusive) to end (exclusive)
+        std::sort(samples[type].begin() + start, samples[type].begin() + end);
+
+        RunningMean *meanCalc = new RunningMean(samples[type][0]);
+        for (int i = start + 1; i < end; i++) {
+          meanCalc->addSample(samples[type][i]);
+        }
+
+        int64_t min = samples[type][start];
+        int64_t p25 = samples[type][start + elems/4];
+        int64_t p50 = samples[type][start + elems/2];
+        int64_t p75 = samples[type][end - 1 - elems/4];
+        int64_t p90 = samples[type][end - 1 - elems/10];
+        int64_t p95 = samples[type][end - 1 - elems/20];
+        int64_t p99 = samples[type][end - 1 - elems/100];
+        int64_t max = samples[type][end - 1];
+        double mean = meanCalc->mean();
+
+        delete meanCalc;
+
         // TODO: log
+
         csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
-            "," << numops[type] << "," << errors[type] <<
-            "," << 0 << "," << sampleDuration <<
-            ",0,,,,,,,,," << std::endl;
-
-        return;
+          "," << numops[type] << "," << errors[type] <<
+          "," << opsSinceReset[type] << "," << sampleDuration <<
+          "," << elems << "," << mean << "," << min << "," << p25 << "," << p50 <<
+          "," << p75 << "," << p90 << "," << p95 << "," << p99 << "," << max << std::endl;
     }
-
-    // thread lock to prevent output contention
-    std::lock_guard<std::mutex> lock(line_lock);
-
-    // sort  from start (inclusive) to end (exclusive)
-    std::sort(samples[type].begin() + start, samples[type].begin() + end);
-
-    RunningMean *meanCalc = new RunningMean(samples[type][0]);
-    for (int i = start + 1; i < end; i++) {
-      meanCalc->addSample(samples[type][i]);
-    }
-
-    int64_t min = samples[type][start];
-    int64_t p25 = samples[type][start + elems/4];
-    int64_t p50 = samples[type][start + elems/2];
-    int64_t p75 = samples[type][end - 1 - elems/4];
-    int64_t p90 = samples[type][end - 1 - elems/10];
-    int64_t p95 = samples[type][end - 1 - elems/20];
-    int64_t p99 = samples[type][end - 1 - elems/100];
-    int64_t max = samples[type][end - 1];
-    double mean = meanCalc->mean();
-
-    delete meanCalc;
-
-    // TODO: log
-
-    csvOutput << threadID << "," << timestamp << "," << messageTypeLabel[type] <<
-      "," << numops[type] << "," << errors[type] <<
-      "," << opsSinceReset[type] << "," << sampleDuration <<
-      "," << elems << "," << mean << "," << min << "," << p25 << "," << p50 <<
-      "," << p75 << "," << p90 << "," << p95 << "," << p99 << "," << max << std::endl;
 
 }
 
@@ -177,7 +181,10 @@ int64_t SampledStats::getCount(MessageType type) {
  * @param out
  */
 void SampledStats::writeCSVHeader(std::ostream &out) {
-    out << "threadID,timestamp,op,totalops,totalerrors,ops," <<
-           "sampleDuration_us,sampleOps,mean_us,min_us,p25_us,p50_us," <<
-           "p75_us,p90_us,p95_us,p99_us,max_us" << std::endl;
+
+    if (out) {
+        out << "threadID,timestamp,op,totalops,totalerrors,ops," <<
+               "sampleDuration_us,sampleOps,mean_us,min_us,p25_us,p50_us," <<
+               "p75_us,p90_us,p95_us,p99_us,max_us" << std::endl;
+    }
 }
