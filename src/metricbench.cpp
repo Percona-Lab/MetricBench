@@ -11,6 +11,9 @@
 
 #include <boost/program_options.hpp>
 #include <boost/lockfree/queue.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
 #include <boost/filesystem.hpp>
 
 #include "tsqueue.hpp"
@@ -23,6 +26,8 @@
 using namespace std;
 
 namespace po = boost::program_options;
+
+namespace logging = boost::log;
 
 /* Global shared structures */
 /* Message queue with timestamps */
@@ -72,7 +77,11 @@ int main(int argc, const char **argv)
             "Random seed for pseudo-random numbers\n" "(0 = non-deterministic seed)")
         ("displayfreq", po::value<int>(&Config::displayFreq)->default_value(Config::DEFAULT_DISPLAY_FREQ),
             "Statistics display frequency in seconds, for standard output and CSV streaming.")
-	;
+        ("loglevel", po::value<std::string>(&Config::logLevel)->default_value(Config::DEFAULT_LOG_LEVEL),
+            "Logging level fatal,error,warning,info,debug,trace")
+        ("logfile", po::value<std::string>(&Config::logFile)->default_value(Config::DEFAULT_LOG_FILE),
+            "Log file")
+        ;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -175,12 +184,15 @@ int main(int argc, const char **argv)
     Preparer Runner(GenDrive);
     Runner.SetGenerator(&PG);
 
+    int retval=EXIT_SUCCESS;
+
     Stats st;
 
     std::thread threadStats(&Stats::Run, &st);
     threadStats.detach();
 
     if (runMode == "prepare") {
+
         cout << "PREPARE mode" << endl;
         Config::runMode = PREPARE;
         try {
@@ -195,16 +207,13 @@ int main(int argc, const char **argv)
             cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
             cout << "# ERR: " << e.what() << endl;
 
-            return EXIT_FAILURE;
+            retval = EXIT_FAILURE;
         }
 
-        // print latency statistics
-        latencyStats.displayLatencyStats();
-
-        return EXIT_SUCCESS;
     }
 
-    if (runMode == "run") {
+    else if (runMode == "run") {
+
         cout << "RUN mode" << endl;
         Config::runMode = RUN;
         try {
@@ -219,14 +228,17 @@ int main(int argc, const char **argv)
             cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
             cout << "# ERR: " << e.what() << endl;
 
-            return EXIT_FAILURE;
+            retval = EXIT_FAILURE;
         }
 
-        // print latency statistics
-        latencyStats.displayLatencyStats();
-
-        return EXIT_SUCCESS;
     }
 
-    return EXIT_SUCCESS;
+    // wait for driver processing to complete
+    Config::processingComplete = true;
+    GenDrive->JoinThreads();
+
+    // print latency statistics
+    latencyStats.displayLatencyStats();
+
+    return retval;
 }

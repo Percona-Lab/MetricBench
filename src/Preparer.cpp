@@ -10,7 +10,7 @@
 
 extern tsqueue<Message> tsQueue;
 
-void Preparer::prepProgressPrint(unsigned int startTs, unsigned int total) const {
+void Preparer::prepProgressPrint(uint64_t startTs, uint64_t total) const {
 
     auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -51,30 +51,39 @@ void Preparer::Prep(){
 	insertProgress = 0;
 
 
-    for (unsigned int ts = Config::StartTimestamp; ts < Config::StartTimestamp + Config::LoadMins * 60 ; ts += 60) {
-//	cout << "Timestamp: " << ts << endl;
+    /* Device Loop */
+    for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
 
-	    /* Devices loop */
-	   /*auto devicesCnt = 5000;
-	   std::unordered_set< int > s;
-	   while (s.size() < devicesCnt) {
-	   auto size_b = s.size();
-	   auto dc = dis(gen);
-	   s.insert(dc);
-	   if (size_b==s.size()) { continue; }*/
-	   for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
-		    /* tables loop */
-		    for (auto table = 1; table <= Config::DBTables; table++) {
-			    Message m(Insert, ts, dc, table);
-			    tsQueue.push(m);
-		    }
-		    insertProgress+=Config::DBTables;
-		    //cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
-		    tsQueue.wait_size(Config::LoaderThreads*2);
-	    }
+        GenericDriver::ts_range tsRange=DataLoader->getTimestampRange(0);
+
+        uint64_t startTimestamp = std::max(tsRange.max+60,Config::StartTimestamp);
+
+        /* Time Loop */
+        for (uint64_t ts = startTimestamp;
+            ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
+
+            // cout << "Timestamp: " << ts << endl;
+
+            /* Devices loop */
+            /*auto devicesCnt = 5000;
+            std::unordered_set< int > s;
+            while (s.size() < devicesCnt) {
+            auto size_b = s.size();
+            auto dc = dis(gen);
+            s.insert(dc);
+            if (size_b==s.size()) { continue; }*/
+
+            /* tables loop */
+            for (auto table = 1; table <= Config::DBTables; table++) {
+                Message m(Insert, ts, dc, table);
+                tsQueue.push(m);
+            }
+            insertProgress+=Config::DBTables;
+            //cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
+            tsQueue.wait_size(Config::LoaderThreads*2);
+        }
 
 	tsQueue.wait_empty();
-
 
     }
 
@@ -87,50 +96,69 @@ void Preparer::Prep(){
 
 void Preparer::Run(){
 
-    unsigned int minTs, maxTs;
+    // get the existing range that spans across all
+    // tables
+    GenericDriver::ts_range tsRange = DataLoader->getTimestampRange(0);
 
-    DataLoader->Run(minTs, maxTs);
+    // start the driver run threads
+    DataLoader->Run();
 
-    auto tsRange = maxTs - minTs;
+    // our processing window is load seconds
+    int64_t tsWindow = Config::LoadMins * 60;
+
+    uint64_t startTimestamp=tsRange.max + 60;
+    uint64_t endTimestamp=tsRange.max + tsWindow;
+
+    // start deleting from the oldest recorded timestamp
+    uint64_t deleteTimestamp=tsRange.min;
 
     /* create thread printing progress */
     std::thread threadReporter(&Preparer::prepProgressPrint,
 	this,
-	maxTs + 60,
+        startTimestamp,
 	Config::LoadMins * 60);
 
-
     cout << "Running benchmark from ts: "
-	<< maxTs + 60 << ", to ts: "
-	<< maxTs + Config::LoadMins * 60
+	<< startTimestamp << ", to ts: "
+	<< endTimestamp
 	<< ", range: "
-	<< tsRange
+	<< endTimestamp - startTimestamp
 	<< endl;
 
-    for (auto ts=maxTs + 60; ts < maxTs + Config::LoadMins * 60; ts += 60) {
+        /* Time loop */
+        for (auto ts=startTimestamp; ts <= endTimestamp; ts += 60) {
 
-        unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
-	unsigned int oldDevicesCnt = DataLoader->getMaxDevIdForTS(ts - tsRange - 60);
+            unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
+            GenericDriver::dev_range deviceRange = DataLoader->getDeviceRange({0,0},0);
+            unsigned int oldDevicesCnt = deviceRange.max;
+
+            /* Devices loop */
+            for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
 
 /*
-	cout << "Timestamp: " << ts
-	    << ", Devices: "
-	    << devicesCnt
-	    << ", Old Devices: "
-	    << oldDevicesCnt
-	    << endl;
+            cout << "Timestamp: " << ts
+                << ", Devices: "
+                << devicesCnt
+                << ", Old Devices: "
+                << oldDevicesCnt
+                << endl;
 */
-	/* Devices loop */
-	for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
-	    if (dc <= devicesCnt) {
-		Message m(Insert, ts, dc, 1);
-		tsQueue.push(m);
-	    }
-	    if (dc <= oldDevicesCnt) {
-		Message m(Delete, ts - tsRange - 60, dc, 1);
-		tsQueue.push(m);
-	    }
+            /* Table/Collection loop */ 
+            for (unsigned int table_id=1; table_id <= Config::DBTables; table_id++) {
+
+                if (dc <= devicesCnt) {
+                    Message m(Insert, ts, dc, table_id);
+                    tsQueue.push(m);
+                }
+                if (dc <= oldDevicesCnt) {
+                    Message m(Delete, deleteTimestamp, dc, table_id);
+                    tsQueue.push(m);
+                }
+            }
 	}
+
+        // advance our trailing delete
+        deleteTimestamp += 60;
 
 	tsQueue.wait_size(Config::LoaderThreads*10);
 	insertProgress = ts;

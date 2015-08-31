@@ -48,11 +48,12 @@ public:
 		    url) {}
 
     virtual void Prep();
-    virtual void Run(unsigned int& minTs, unsigned int& maxTs);
+    virtual void Run();
     virtual void CreateSchema();
 
     /* return max device_id available for given ts */
-    virtual unsigned int getMaxDevIdForTS(unsigned int ts);
+    virtual GenericDriver::ts_range getTimestampRange(unsigned int);
+    virtual GenericDriver::dev_range getDeviceRange(GenericDriver::ts_range, unsigned int);
 
 private:
     void InsertData(const int threadId, const std::vector<int> &);

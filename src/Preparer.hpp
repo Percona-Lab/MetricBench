@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <stdlib.h>
 #include <iostream>
@@ -32,6 +33,6 @@ public:
     void setLatencyStats(LatencyStats * ls);
 private:
     /* periodical print of prepare progress */
-    void prepProgressPrint(unsigned int startTs, unsigned int total) const;
+    void prepProgressPrint(uint64_t startTs, uint64_t total) const;
 };
 

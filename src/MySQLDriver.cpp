@@ -11,13 +11,24 @@ void MySQLDriver::Prep() {
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
         std::thread threadInsertData([this,i,loadStats](){ InsertData(i,loadStats); });
-	threadInsertData.detach();
+        threads.push_back(move(threadInsertData));
     }
 }
 
-void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
+void MySQLDriver::Run() {
     const int rs[] = {MessageType::InsertMetric, MessageType::DeleteDevice};
     const std::vector<int> runStats(rs, end(rs));
+
+    for (int i = 0; i < Config::LoaderThreads; i++) {
+        std::thread threadInsertData([this,i,runStats](){ InsertData(i,runStats); });
+        threads.push_back(move(threadInsertData));
+    }
+
+}
+
+
+/* get the max timestamp so we don't duplicate existing rows */
+GenericDriver::ts_range MySQLDriver::getTimestampRange(unsigned int table_id) {
 
     sql::Driver * driver = sql::mysql::get_driver_instance();
     std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
@@ -25,36 +36,50 @@ void MySQLDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 
     std::unique_ptr< sql::Statement > stmt(con->createStatement());
 
-    for (auto table=1; table <= Config::DBTables; table++) {
-        std::string sqlCmd = "SELECT "
-          "unix_timestamp(min(ts)) mints,unix_timestamp(max(ts)) maxts FROM metrics" +
-          std::to_string(table);
+    GenericDriver::ts_range ret={(uint64_t)-1,0};
 
-	std::unique_ptr< sql::ResultSet >
-	    res(stmt->executeQuery(sqlCmd));
+    ret.min = Config::StartTimestamp;
+    ret.max = Config::StartTimestamp + (Config::LoadMins * 60);
+
+    // if table_id == 0 then iterate over all tables to find the maxTimestamp
+    // value
+    unsigned int start_table=1;
+    unsigned int end_table=Config::DBTables;
+
+    // if table_id is specified then just look at that table
+    if (table_id) {
+      auto start_table = end_table = table_id;
+    }
+
+    for (auto table=start_table; table <= end_table; table++) {
+        stringstream sql;
+	sql.str("");
+	sql << "select unix_timestamp(min(ts)) as mints, unix_timestamp(max(ts)) as maxts from metrics"
+            << table;
+	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
 
 	if (res->next()) {
-	    minTs = res->getUInt("mints");
-	    maxTs = res->getUInt("maxts");
-	    tsRange = maxTs - minTs;
-	    cout << "MinTS: "<< minTs
-		<< ", MaxTS: " << maxTs
-		<< ", Range: "<< (maxTs-minTs) << endl;
-	} else {
-            std::string errStr="SELECT timestamp from metrics returns no result" + std::to_string(table);
-	    throw std::runtime_error (errStr);
+	    ret.min = std::min(ret.min, res->getUInt64("mints"));
+	    ret.max = std::max(ret.max, res->getUInt64("maxts"));
 	}
+        // nothing set
+        if (ret.min == -1) {
+          ret.min=0;
+        }
     }
 
-    for (int i = 0; i < Config::LoaderThreads; i++) {
-	    std::thread threadInsertData([this,i,runStats](){ InsertData(i,runStats); });
-	    threadInsertData.detach();
-    }
+    stmt->close();
+    con->close();
+
+    return ret;
 
 }
 
+// return the min/max device id range for tsRange (if tsRange.max == 0 then
+// all devices)
+GenericDriver::dev_range MySQLDriver::getDeviceRange(GenericDriver::ts_range tsRange, unsigned int table_id) {
 
-unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
+    GenericDriver::dev_range ret={(unsigned int)-1,0};
 
     sql::Driver * driver = sql::mysql::get_driver_instance();
     std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
@@ -64,74 +89,102 @@ unsigned int MySQLDriver::getMaxDevIdForTS(unsigned int ts) {
 
     unsigned int maxDevID = 0;
 
-    for (auto table=1; table <= Config::DBTables; table++) {
+    // if table_id == 0 then iterate over all tables to find the maxTimestamp
+    // value
+    unsigned int start_table=1;
+    unsigned int end_table=Config::DBTables;
+
+    // if table_id is specified then just look at that table
+    if (table_id) {
+      auto start_table = end_table = table_id;
+    }
+
+    for (auto table=start_table; table <= end_table; table++) {
         stringstream sql;
 	sql.str("");
-	sql << "SELECT max(device_id) maxdev FROM metrics"
-            << table
-	    << " WHERE ts=from_unixtime(" << ts << ")";
-	std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
-
-	if (res->next()) {
-	    maxDevID = std::max(maxDevID, res->getUInt("maxdev"));
-	}
-    }
-
-    return maxDevID;
-
-}
-
-/* This thread waits for a signal to handle timestamp event.
-For a given timestamp it loads N devices, each reported M metrics */
-void MySQLDriver::InsertData(int threadId, const std::vector<int> & showStats) {
-
-    cout << "InsertData thread started" << endl;
-    sql::Driver * driver = sql::mysql::get_driver_instance();
-    std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
-    SampledStats stats(threadId, Config::maxsamples, *ostreamSampledStats);
-
-    con->setSchema(database);
-
-    std::unique_ptr< sql::Statement > stmt(con->createStatement());
-
-    Message m;
-
-    int64_t lastDisplayTime =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::high_resolution_clock::now().time_since_epoch()
-      ).count();
-
-    while(true) { // TODO:: have a boolean flag to stop
-	/* wait on a event from queue */
-	tsQueue.wait_and_pop(m);
-
-	switch(m.op) {
-	    case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
-		break;
-	    case Delete: DeleteQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
-		break;
-            default:
-                break;
-	}
-
-        int64_t endTime =
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now().time_since_epoch()
-            ).count();
-
-        if (endTime - lastDisplayTime > Config::displayFreq * 1000) {
-          stats.displayStats(lastDisplayTime, endTime, showStats);
-          lastDisplayTime = endTime;
+	sql << "SELECT min(device_id) mindev, max(device_id) maxdev FROM metrics"
+              << table;
+        if (tsRange.max > 0) {
+          sql << " WHERE ts >= from_unixtime(" << tsRange.min << ") "
+              << " AND ts <= from_unixtime(" << tsRange.max << ")";
         }
+        std::unique_ptr< sql::ResultSet > res(stmt->executeQuery(sql.str()));
 
+        if (res->next()) {
+            ret.min = std::min(ret.min, res->getUInt("mindev"));
+            ret.max = std::max(ret.max, res->getUInt("maxdev"));
+        }
+        else {
+            ret={0,0};
+        }
+      }
+
+      stmt->close();
+      con->close();
+
+      return ret;
+
+  }
+
+  /* This thread waits for a signal to handle timestamp event.
+  For a given timestamp it loads N devices, each reported M metrics */
+  void MySQLDriver::InsertData(int threadId, const std::vector<int> & showStats) {
+
+      cout << "InsertData thread started" << endl;
+      sql::Driver * driver = sql::mysql::get_driver_instance();
+      std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
+      SampledStats stats(threadId, Config::maxsamples, *ostreamSampledStats);
+
+      con->setSchema(database);
+
+      std::unique_ptr< sql::Statement > stmt(con->createStatement());
+
+      Message m;
+
+      int64_t lastDisplayTime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch()
+        ).count();
+
+      while(!Config::processingComplete || !tsQueue.empty()  ) {
+          /* wait on a event from queue */
+          if (!tsQueue.empty()) {
+
+              tsQueue.wait_and_pop(m);
+
+              switch(m.op) {
+                  case Insert: InsertQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
+                      break;
+                  case Delete: DeleteQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
+                      break;
+                  default:
+                      break;
+              }
+
+              int64_t endTime =
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::high_resolution_clock::now().time_since_epoch()
+                  ).count();
+
+              if (ostreamSet && endTime - lastDisplayTime > Config::displayFreq * 1000) {
+                stats.displayStats(lastDisplayTime, endTime, showStats);
+                lastDisplayTime = endTime;
+              }
+          }
+      }
+
+      int64_t endTime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch()
+        ).count();
+
+      stmt->close();
+    con->close();
+    driver->threadEnd();
+
+    if (ostreamSet) {
+        stats.displayStats(lastDisplayTime, endTime, showStats);
     }
-
-    int64_t endTime =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::high_resolution_clock::now().time_since_epoch()
-      ).count();
-
-    stats.displayStats(lastDisplayTime, endTime, showStats);
 
 }
 
@@ -213,7 +266,7 @@ void MySQLDriver::InsertQuery(int threadId,
             latencyStats->recordLatency(threadId, InsertMetric, time_us);
         }
 
-        if (ostreamSampledStats) {
+        if (ostreamSet) {
             stats.addStats(InsertMetric, time_us/1000, false);
         }
 
@@ -221,7 +274,7 @@ void MySQLDriver::InsertQuery(int threadId,
 	statQueue.push(sm);
 
     } catch (sql::SQLException &e) {
-        if (ostreamSampledStats) {
+        if (ostreamSet) {
             auto t1 = std::chrono::high_resolution_clock::now();
             auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
             stats.addStats(InsertMetric, time_ms, true);
@@ -231,7 +284,9 @@ void MySQLDriver::InsertQuery(int threadId,
 	cout << "# ERR: " << e.what();
 	cout << " (MySQL error code: " << e.getErrorCode();
 	cout << ", SQLState: " << e.getSQLState() << " )" << endl;
-	throw std::runtime_error ("Can't execute DELETE");
+        cout << "SQL: " << sql.str() << endl;
+        cout << "SQL UPD: " << sql_upd.str() << endl;
+	throw std::runtime_error ("Can't execute INSERT");
     }
 
 }
@@ -263,7 +318,7 @@ void MySQLDriver::DeleteQuery(int threadId,
           latencyStats->recordLatency(threadId, DeleteDevice, time_us);
         }
 
-        if (ostreamSampledStats) {
+        if (ostreamSet) {
           stats.addStats(DeleteDevice, time_us/1000, false);
         }
 
@@ -273,7 +328,7 @@ void MySQLDriver::DeleteQuery(int threadId,
     } catch (sql::SQLException &e) {
 	auto t1 = std::chrono::high_resolution_clock::now();
 	auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
-        if (ostreamSampledStats) {
+        if (ostreamSet) {
           stats.addStats(DeleteDevice, time_ms, true);
         }
 	cout << "# ERR: SQLException in " << __FILE__;
@@ -330,5 +385,8 @@ void MySQLDriver::CreateSchema() {
     }
 
     cout << "#\t Schema created" << endl;
+
+    con->close();
 }
+
 
