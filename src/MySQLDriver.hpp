@@ -28,6 +28,7 @@
 #include "Config.hpp"
 #include "GenericDriver.hpp"
 #include "LatencyStats.hpp"
+#include "Logger.hpp"
 #include "Message.hpp"
 #include "pareto.hpp"
 #include "SampledStats.hpp"

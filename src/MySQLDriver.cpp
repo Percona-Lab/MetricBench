@@ -130,7 +130,7 @@ GenericDriver::dev_range MySQLDriver::getDeviceRange(GenericDriver::ts_range tsR
   For a given timestamp it loads N devices, each reported M metrics */
   void MySQLDriver::InsertData(int threadId, const std::vector<int> & showStats) {
 
-      cout << "InsertData thread started" << endl;
+      log(logDEBUG) << "InsertData thread started";
       sql::Driver * driver = sql::mysql::get_driver_instance();
       std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
       SampledStats stats(threadId, Config::maxsamples, *ostreamSampledStats);
@@ -248,15 +248,20 @@ void MySQLDriver::InsertQuery(int threadId,
 
 	}
 
-	t0 = std::chrono::high_resolution_clock::now();
-	stmt.execute("BEGIN");
-	sql << sql_val.str();
-	stmt.execute(sql.str());
+        logtrace() << " sql=" << sql.str();
 
 	sql_upd.str("");
 	sql_upd << "INSERT INTO metrics_sum"<<table_id<<" (ts, device_id, metric_id, cnt, val) VALUES ";
 	sql_upd << sql_upd_val.str();
 	sql_upd << "ON DUPLICATE KEY UPDATE cnt=cnt+VALUES(cnt), val=val+VALUES(val)";
+
+        logtrace() << " sql_upd=" << sql_upd.str();
+
+	t0 = std::chrono::high_resolution_clock::now();
+	stmt.execute("BEGIN");
+	sql << sql_val.str();
+	stmt.execute(sql.str());
+
 	//stmt.execute(sql_upd.str());
 	stmt.execute("COMMIT");
 	auto t1 = std::chrono::high_resolution_clock::now();
@@ -279,13 +284,11 @@ void MySQLDriver::InsertQuery(int threadId,
             auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
             stats.addStats(InsertMetric, time_ms, true);
         }
-	cout << "# ERR: SQLException in " << __FILE__;
-	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-	cout << "# ERR: " << e.what();
-	cout << " (MySQL error code: " << e.getErrorCode();
-	cout << ", SQLState: " << e.getSQLState() << " )" << endl;
-        cout << "SQL: " << sql.str() << endl;
-        cout << "SQL UPD: " << sql_upd.str() << endl;
+	log(logERROR) << "SQLException in " << __FILE__
+	              << "(" << __FUNCTION__ << ") on line " << __LINE__;
+	log(logERROR) << e.what()
+	              << " (MySQL error code: " << e.getErrorCode()
+	              << ", SQLState: " << e.getSQLState() << " )";
 	throw std::runtime_error ("Can't execute INSERT");
     }
 
@@ -306,6 +309,8 @@ void MySQLDriver::DeleteQuery(int threadId,
 	sql.str("");
 	sql << "DELETE FROM metrics"<<table_id<<" WHERE ts=from_unixtime(" << timestamp << ")"
 	    << " AND device_id=" << device_id;
+
+        logtrace() << " sql=" << sql;
 
 	t0 = std::chrono::high_resolution_clock::now();
 	stmt.execute("BEGIN");
@@ -331,11 +336,11 @@ void MySQLDriver::DeleteQuery(int threadId,
         if (ostreamSet) {
           stats.addStats(DeleteDevice, time_ms, true);
         }
-	cout << "# ERR: SQLException in " << __FILE__;
-	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-	cout << "# ERR: " << e.what();
-	cout << " (MySQL error code: " << e.getErrorCode();
-	cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	log(logERROR) << "# ERR: SQLException in " << __FILE__
+	              << "(" << __FUNCTION__ << ") on line " << __LINE__;
+	log(logERROR) << e.what()
+	              << " (MySQL error code: " << e.getErrorCode()
+	              << ", SQLState: " << e.getSQLState() << " )";
 	throw std::runtime_error ("Can't execute DELETE");
     }
 
@@ -354,8 +359,11 @@ void MySQLDriver::CreateSchema() {
     try {
 	for (auto table=1; table <= Config::DBTables; table++)
 	{
-		stmt->execute("DROP TABLE IF EXISTS metrics" + std::to_string(table));
-		if (!Config::preCreateStatement.empty())
+            std::string dropsql = "DROP TABLE IF EXISTS metrics" + std::to_string(table);
+            logtrace() << " dropsql=" << dropsql; 
+            stmt->execute(dropsql);
+
+            if (!Config::preCreateStatement.empty())
 			stmt->execute(Config::preCreateStatement);
 	stmt->execute("CREATE TABLE metrics" + std::to_string(table) + 
 		    " (ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',\
@@ -370,9 +378,6 @@ void MySQLDriver::CreateSchema() {
 		    KEY k4 (ts, metric_id, val)\
 		    ) ENGINE=" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
 
-//	stmt->execute("DROP TABLE IF EXISTS metrics_sum" + std::to_string(table));
-//	stmt->execute("CREATE TABLE metrics_sum"+ std::to_string(table) + " LIKE metrics1");
-//	stmt->execute("ALTER TABLE metrics_sum"+ std::to_string(table) + " drop primary key, drop column id,add primary key(ts,device_id,metric_id)");
 
 	}
     } catch (sql::SQLException &e) {

@@ -14,6 +14,7 @@
 #include "Config.hpp"
 #include "GenericDriver.hpp"
 #include "LatencyStats.hpp"
+#include "Logger.hpp"
 #include "pareto.hpp"
 #include "SampledStats.hpp"
 

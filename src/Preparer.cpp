@@ -23,15 +23,14 @@ void Preparer::prepProgressPrint(uint64_t startTs, uint64_t total) const {
 			static_cast<double> (insertProgress - startTs)  / total
 			) : 0 );
 
-	cout << std::fixed << std::setprecision(2)
+	log(logINFO) << std::fixed << std::setprecision(2)
 	    << "[Progress] Time: " << secFromStart << "[sec], "
 	    << "Progress: " << insertProgress
 	    << "/" << total << " = "
 	    << static_cast<double> (insertProgress - startTs) * 100 / (total)
 	    << "%, "
 	    << "Time left: " << estTotalTime - secFromStart << "[sec] "
-	    << "Est total: " << estTotalTime << "[sec]"
-	    << endl;
+	    << "Est total: " << estTotalTime << "[sec]";
     }
 
 }
@@ -62,16 +61,7 @@ void Preparer::Prep(){
         for (uint64_t ts = startTimestamp;
             ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
 
-            // cout << "Timestamp: " << ts << endl;
-
-            /* Devices loop */
-            /*auto devicesCnt = 5000;
-            std::unordered_set< int > s;
-            while (s.size() < devicesCnt) {
-            auto size_b = s.size();
-            auto dc = dis(gen);
-            s.insert(dc);
-            if (size_b==s.size()) { continue; }*/
+            log(logDEBUG) << "Timestamp: " << ts;
 
             /* tables loop */
             for (auto table = 1; table <= Config::DBTables; table++) {
@@ -79,7 +69,7 @@ void Preparer::Prep(){
                 tsQueue.push(m);
             }
             insertProgress+=Config::DBTables;
-            //cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
+            log(logDEBUG) << std::fixed << std::setprecision(2) << " insertProgress: " << insertProgress;
             tsQueue.wait_size(Config::LoaderThreads*2);
         }
 
@@ -87,7 +77,8 @@ void Preparer::Prep(){
 
     }
 
-    cout << "#\t Data Load Finished" << endl;
+    log(logINFO) << "Data Load Finished";
+
     progressLoad = false;
     /* wait on reporter to finish */
     threadReporter.join();
@@ -118,12 +109,11 @@ void Preparer::Run(){
         startTimestamp,
 	Config::LoadMins * 60);
 
-    cout << "Running benchmark from ts: "
+    log(logINFO) << "Running benchmark from ts: "
 	<< startTimestamp << ", to ts: "
 	<< endTimestamp
 	<< ", range: "
-	<< endTimestamp - startTimestamp
-	<< endl;
+	<< endTimestamp - startTimestamp;
 
         /* Time loop */
         for (auto ts=startTimestamp; ts <= endTimestamp; ts += 60) {
@@ -135,26 +125,24 @@ void Preparer::Run(){
             /* Devices loop */
             for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
 
-/*
-            cout << "Timestamp: " << ts
-                << ", Devices: "
-                << devicesCnt
-                << ", Old Devices: "
-                << oldDevicesCnt
-                << endl;
-*/
-            /* Table/Collection loop */
-            for (unsigned int table_id=1; table_id <= Config::DBTables; table_id++) {
+                log(logDEBUG) << "Timestamp: " << ts
+                    << ", Devices: "
+                    << devicesCnt
+                    << ", Old Devices: "
+                    << oldDevicesCnt;
 
-                if (dc <= devicesCnt) {
-                    Message m(Insert, ts, dc, table_id);
-                    tsQueue.push(m);
+                /* Table/Collection loop */
+                for (unsigned int table_id=1; table_id <= Config::DBTables; table_id++) {
+
+                    if (dc <= devicesCnt) {
+                        Message m(Insert, ts, dc, table_id);
+                        tsQueue.push(m);
+                    }
+                    if (dc <= oldDevicesCnt) {
+                        Message m(Delete, deleteTimestamp, dc, table_id);
+                        tsQueue.push(m);
+                    }
                 }
-                if (dc <= oldDevicesCnt) {
-                    Message m(Delete, deleteTimestamp, dc, table_id);
-                    tsQueue.push(m);
-                }
-            }
 	}
 
         // advance our trailing delete
@@ -164,7 +152,7 @@ void Preparer::Run(){
 	insertProgress = ts;
     }
 
-    cout << "#\t Benchmark Finished" << endl;
+    log(logINFO) << "Benchmark Finished";
     progressLoad = false;
     /* wait on reporter to finish */
     threadReporter.join();

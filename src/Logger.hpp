@@ -11,7 +11,14 @@ class logIt
 public:
 
     logIt(loglevel_e _loglevel = logERROR) {
-        _buffer << loglevel_e_Label[_loglevel] << ": ";
+        // only display loglevel prefix on non-info lines
+        if (_loglevel != logINFO)
+          _buffer << loglevel_e_Label[_loglevel] << ": ";
+    }
+
+    // for trace
+    logIt(const std::string file, uint64_t line) {
+        _buffer << loglevel_e_Label[logTRACE] << ": " << file << ":" << line;
     }
 
     template <typename T>
@@ -35,3 +42,8 @@ private:
 #define log(level) \
 if (level > Config::logLevel) ; \
 else logIt(level)
+
+#define logtrace() \
+if (logTRACE > Config::logLevel) ; \
+else logIt(__FILE__,__LINE__)
+

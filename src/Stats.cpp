@@ -37,13 +37,12 @@ void Stats::statsPrint() {
 
 	totalInserted += cnts;
 
-	std::cout << std::fixed << std::setprecision(2)
-	    << "[Stats] Time: " << secFromStart << "[sec], " 
+	log(logINFO) << std::fixed << std::setprecision(2)
+	    << "[Stats] Time: " << secFromStart << "[sec], "
 	    << messageTypeLabel[InsertMetric] << " interval:" << cnts
 	    << ", cum: " << totalInserted
 	    << ", max time(us): " << biggest
-	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size()
-	    << std::endl;
+	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size();
 
 	cnts = Counts[DeleteDevice];
 
@@ -54,12 +53,11 @@ void Stats::statsPrint() {
 	    biggest = *tmp;
 	    pct99 = percentile(execTimes[DeleteDevice], 0.99);
 
-	    std::cout << std::fixed << std::setprecision(2)
+	    log(logINFO) << std::fixed << std::setprecision(2)
 		<< "[Stats] Time: " << secFromStart << "sec, "
 		<< messageTypeLabel[DeleteDevice] << ": " << cnts
 		<< ", max time(us): " << biggest
-		<< ", 99% time(us): " << pct99
-		<< std::endl;
+		<< ", 99% time(us): " << pct99;
 	}
 
 	Counts.clear();
@@ -76,7 +74,7 @@ void Stats::Run() {
     /* create thread printing progress */
     std::thread statReporter(&Stats::statsPrint, this);
 
-    std::cout << "Stats thread started..." << std::endl;
+    log(logINFO) << "Stats thread started...";
 
     StatMessage sm;
 
@@ -97,13 +95,11 @@ void Stats::Run() {
 		insertTimes.push_back(sm.time_us);
 		lockCounts.unlock();
 
-//		std::cout << "[Stats] Recived count: "
+//		log(logINFO) << "[Stats] Recived count: "
 //		    << sm.cnt << ", total: "
-//		    << Counts[InsertMetric]
-//		    << std::endl;
+//		    << Counts[InsertMetric];
 		break;
 	}*/
 
     }
-
 }

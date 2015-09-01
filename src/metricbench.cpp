@@ -94,7 +94,7 @@ int main(int argc, const char **argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    // usage
+    // usage (always goes to standard output)
     if (vm.count("help")) {
         std::string appName = boost::filesystem::basename(argv[0]);
         cout << "Usage: " << appName << " --mode=[prepare|run] [options]\n";
@@ -121,8 +121,8 @@ int main(int argc, const char **argv)
             logstream.open(Config::logFile,
                            std::ofstream::out);
             if (logstream.fail()) {
-              cout << "# ERR: Could not open --logfile file for output: " <<
-                Config::logFile << std::endl;
+              log(logERROR) << "Could not open --logfile file for output: " <<
+                Config::logFile;
               return EXIT_FAILURE;
             } else {
                 Config::log = &logstream;
@@ -132,12 +132,12 @@ int main(int argc, const char **argv)
 
     // require mode
     if (runMode.compare("") == 0) {
-        cout << "# ERR: You must specify --mode.  Use --help for information.\n\n";
+        log(logERROR) << "ERROR: You must specify --mode.  Use --help for information.";
         return EXIT_FAILURE;
     }
 
     if (runDriver.compare("") == 0) {
-        cout << "# ERR: You must specify --driver.  Use --help for information.\n\n";
+        log(logERROR) << "ERROR: You must specify --driver.  Use --help for information.";
         return EXIT_FAILURE;
     }
 
@@ -147,30 +147,43 @@ int main(int argc, const char **argv)
     if (Config::connHost.find("://") == string::npos) {
       Config::connHost.insert(0,"tcp://");
     }
+
     // mongodb only supports tcp
     if (runDriver == "mongodb" &&
         Config::connHost.find("tcp://") == string::npos) {
-        cout << "# ERR: The mongodb driver only supports tcp:// connection types." << endl;
+        log(logERROR) << "The mongodb driver only supports tcp:// connection types.";
         return EXIT_FAILURE;
     }
 
+    // csvstream (SampledStats)
+    std::ofstream csvstream;
+    if (Config::csvStreamingStatsFile.compare("")) {
+      csvstream.open(Config::csvStreamingStatsFile,
+                     std::ofstream::out);
+      if (csvstream.fail()) {
+        log(logERROR) << "Could not open --csvstream file for output: " <<
+          Config::csvStreamingStatsFile;
+        return EXIT_FAILURE;
+      }
+    }
+
     // report driver
-    cout << "Using Database Driver: " << runDriver << endl;
+    log(logINFO) << ("Using Database Driver: " + runDriver);
 
     // storage engine cannot be specified at runtime for mongodb
     if (vm.count("engine") && runDriver != "mongodb") {
-	cout << "Using Storage engine: "
-	    << vm["engine"].as<string>() << endl;
+        log(logINFO) << ( "Using Storage engine: "
+	    + vm["engine"].as<string>() );
 	Config::storageEngine = vm["engine"].as<string>();
     }
     if (vm.count("engine-extra")) {
-	cout << "Using Storage engine extra options: "
-	    << vm["engine-extra"].as<string>() << endl;
+	log(logINFO) << ( "Using Storage engine extra options: "
+	    + vm["engine-extra"].as<string>() );
 	Config::storageEngineExtra = vm["engine-extra"].as<string>();
     }
     if (vm.count("pre-create")) {
-	cout << "Using pre-create statement: "
-	    << vm["pre-create"].as<string>() << endl;
+	log(logINFO) << ( "Using pre-create statement: "
+	    + vm["pre-create"].as<string>() );
 	Config::preCreateStatement = vm["pre-create"].as<string>();
     }
 
@@ -180,19 +193,6 @@ int main(int argc, const char **argv)
     const string database(Config::connDb);
 
     LatencyStats latencyStats(Config::LoaderThreads);
-
-
-    // csvstream (SampledStats)
-    std::ofstream csvstream;
-    if (Config::csvStreamingStatsFile.compare("")) {
-      csvstream.open(Config::csvStreamingStatsFile,
-                     std::ofstream::out);
-      if (csvstream.fail()) {
-        cout << "# ERR: Could not open --csvstream file for output: " <<
-          Config::csvStreamingStatsFile << std::endl;
-        return EXIT_FAILURE;
-      }
-    }
 
     /* prepare routine */
 
@@ -226,19 +226,19 @@ int main(int argc, const char **argv)
 
     if (runMode == "prepare") {
 
-        cout << "PREPARE mode" << endl;
+        log(logINFO) << "PREPARE mode";
         Config::runMode = PREPARE;
         try {
 
             Runner.Prep();
 
-            cout << "# done!" << endl;
+            log(logINFO) << "# done!";
 
         } catch (std::runtime_error &e) {
 
-            cout << "# ERR: runtime_error in " << __FILE__;
-            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-            cout << "# ERR: " << e.what() << endl;
+            log(logERROR) << "runtime_error in " << __FILE__;
+            log(logERROR) << "(" << __FUNCTION__ << ") on line " << __LINE__;
+            log(logERROR) << "# ERR: " << e.what();
 
             retval = EXIT_FAILURE;
         }
@@ -247,19 +247,19 @@ int main(int argc, const char **argv)
 
     else if (runMode == "run") {
 
-        cout << "RUN mode" << endl;
+        log(logINFO) << "RUN mode";
         Config::runMode = RUN;
         try {
 
             Runner.Run();
 
-            cout << "# done!" << endl;
+            log(logINFO) << "# done!";
 
         } catch (std::runtime_error &e) {
 
-            cout << "# ERR: runtime_error in " << __FILE__;
-            cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-            cout << "# ERR: " << e.what() << endl;
+            log(logERROR) << "# ERR: runtime_error in " << __FILE__;
+            log(logERROR) << "(" << __FUNCTION__ << ") on line " << __LINE__;
+            log(logERROR) << "# ERR: " << e.what();
 
             retval = EXIT_FAILURE;
         }

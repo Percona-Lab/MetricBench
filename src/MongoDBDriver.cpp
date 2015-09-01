@@ -92,7 +92,7 @@ GenericDriver::ts_range MongoDBDriver::getTimestampRange(unsigned int collection
 /* This thread waits for a signal to handle timestamp event.
 For a given timestamp it loads N devices, each reported M metrics */
 void MongoDBDriver::InsertData(int threadId, const std::vector<int> & showStats) {
-    cout << "InsertData thread started" << endl;
+    log(logDEBUG) << "InsertData thread started";
 
     mongo::DBClientConnection c;
     getConnection(c);
@@ -257,8 +257,8 @@ void MongoDBDriver::CreateSchema() {
 		}
 
 	} catch( const mongo::DBException &e ) {
-		std::cout << "caught " << e.what() << std::endl;
+		log(logERROR) << "caught " << e.what();
 	}
-	cout << "#\t Schema created" << endl;
+	log(logDEBUG) << "Schema created";;
 }
 

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "Config.hpp"
+#include "Logger.hpp"
 #include "Message.hpp"
 #include "tsqueue.hpp"
 
