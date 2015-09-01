@@ -143,7 +143,7 @@ void Preparer::Run(){
                 << oldDevicesCnt
                 << endl;
 */
-            /* Table/Collection loop */ 
+            /* Table/Collection loop */
             for (unsigned int table_id=1; table_id <= Config::DBTables; table_id++) {
 
                 if (dc <= devicesCnt) {

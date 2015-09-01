@@ -85,9 +85,9 @@ int main(int argc, const char **argv)
         ("displayfreq", po::value<int>(&Config::displayFreq)->default_value(Config::DEFAULT_DISPLAY_FREQ),
             "Statistics display frequency in seconds, for standard output and CSV streaming.")
         ("loglevel", po::value<string>(&logLevelString)->default_value(logLevelString),
-            "Logging level fatal,error,warning,info,debug,trace")
+            "Log level fatal,error,warning,info,debug,trace")
         ("logfile", po::value<std::string>(&Config::logFile)->default_value(Config::DEFAULT_LOG_FILE),
-            "Log file")
+            "Log file, use - for standard output.")
         ;
 
     po::variables_map vm;
@@ -129,10 +129,6 @@ int main(int argc, const char **argv)
             }
         }
     }
-
-    log(logERROR) << "Exiting";
-    return 1;
-
 
     // require mode
     if (runMode.compare("") == 0) {
