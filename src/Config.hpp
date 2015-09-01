@@ -1,7 +1,21 @@
 #pragma once
 
+#include <mutex>
 #include <string>
+
 using namespace std;
+
+// see Logger.hpp
+
+enum loglevel_e
+    {logFATAL=0, logERROR, logWARNING, logINFO, logDEBUG, logTRACE, logEND};
+
+// MessageType labels for reporting
+const char * const loglevel_e_Label[logEND] = {
+    "FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"
+};
+
+// run mode
 
 enum  RunModeE { PREPARE = 1, RUN };
 
@@ -28,7 +42,7 @@ namespace Config
     extern std::string connUser;
     extern std::string connPass;
 
-    constexpr unsigned int StartTimestamp = 946684800;
+    constexpr uint64_t StartTimestamp = 946684800;
     constexpr unsigned int SecInDay = 24*60*60;
 
     // TODO:  Make these configurable
@@ -42,7 +56,6 @@ namespace Config
     extern unsigned int LoaderThreads;
     extern unsigned int DBTables;
     extern unsigned int MaxDevices;
-
     extern std::string storageEngine;
     extern std::string storageEngineExtra;
     extern std::string preCreateStatement;
@@ -59,5 +72,22 @@ namespace Config
 
     constexpr int DEFAULT_DISPLAY_FREQ=10;
     extern int displayFreq;  // display frequency
+
+    // used to instruct driver threads to exit
+    extern bool processingComplete;
+
+    // log level
+    constexpr loglevel_e DEFAULT_LOG_LEVEL = logINFO;
+    extern loglevel_e logLevel;
+
+    // log file
+    constexpr auto DEFAULT_LOG_FILE = "-";   // - for stdout
+    extern std::string logFile;
+
+    // log stream
+    extern std::ostream *log;
+
+    // log mutex
+    extern std::mutex log_lock;
 
 }

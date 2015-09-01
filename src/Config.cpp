@@ -1,4 +1,6 @@
+#include <iostream>
 #include <string>
+
 #include "Config.hpp"
 
 namespace Config
@@ -29,4 +31,13 @@ namespace Config
     unsigned int randomSeed=DEFAULT_RANDOM_SEED;
 
     int displayFreq = DEFAULT_DISPLAY_FREQ;
+
+    bool processingComplete = false;
+
+    loglevel_e logLevel = DEFAULT_LOG_LEVEL;
+    std::string logFile = DEFAULT_LOG_FILE;
+
+    std::ostream *log = &std::cout;
+
+    std::mutex log_lock;
 }

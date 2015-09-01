@@ -26,12 +26,24 @@ public:
 	    const string database,
 	    const string url);
 
-    virtual void Prep();
-    virtual void Run(unsigned int& minTs, unsigned int& maxTs);
-    virtual void CreateSchema();
+    virtual void CreateSchema();    // Create the schema (during prepare)
+    virtual void Prep();            // Prepare the data
+    virtual void Run();             // Run mode
 
-    /* return max device_id available for given ts */
-    virtual unsigned int getMaxDevIdForTS(unsigned int ts);
+    /**
+     * return max device_id available for given ts
+     *
+     * @param table/collection id,  or 0 for all
+     */
+    virtual GenericDriver::ts_range getTimestampRange(unsigned int);
+
+    /**
+     * return the device range for the given ts range
+     *
+     * @param timestamp range (if .max == 0 then all)
+     * @param table/collection id (if 0 then all)
+     */
+    virtual GenericDriver::dev_range getDeviceRange(GenericDriver::ts_range tsRange, unsigned int);
 
 private:
     bool getConnection(mongo::DBClientConnection &);

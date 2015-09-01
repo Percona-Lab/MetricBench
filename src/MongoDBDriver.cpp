@@ -14,7 +14,6 @@
 extern tsqueue<Message> tsQueue;
 extern tsqueue<StatMessage> statQueue;
 
-
 using namespace std;
 
 // initialize the first time
@@ -58,12 +57,9 @@ void MongoDBDriver::Prep() {
     }
 }
 
-void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
+void MongoDBDriver::Run() {
     const int ls[] = {MessageType::InsertMetric,MessageType::DeleteDevice};
     const std::vector<int> runStats(ls, end(ls));
-
-    mongo::DBClientConnection c;
-    getConnection(c);
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
 	    std::thread threadInsertData([this,i,runStats](){ InsertData(i,runStats); });
@@ -73,14 +69,25 @@ void MongoDBDriver::Run(unsigned int& minTs, unsigned int& maxTs) {
 }
 
 
-unsigned int MongoDBDriver::getMaxDevIdForTS(unsigned int ts) {
+GenericDriver::dev_range MongoDBDriver::getDeviceRange(GenericDriver::ts_range, unsigned int collection_id) {
 
+    // TODO: implement
 
-    unsigned int maxDevID = 0;
+    GenericDriver::dev_range ret;
 
-    return maxDevID;
+    return ret;
 
 }
+
+GenericDriver::ts_range MongoDBDriver::getTimestampRange(unsigned int collection_id) {
+
+    // TODO: implement
+    ts_range ret={0,0};
+
+    return ret;
+
+}
+
 
 /* This thread waits for a signal to handle timestamp event.
 For a given timestamp it loads N devices, each reported M metrics */

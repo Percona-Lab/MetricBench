@@ -31,7 +31,7 @@ public:
 	if (h <= 1) { throw std::runtime_error("Incorrect Pareto alpha"); }
 	pareto_power = -1 / (h-1); }
 
-    /* return a number from range [a,b), where "b" can be < "a".
+    /* return a number from range [a,b], where "b" can be < "a".
        the distribution is skewed toward "a" */
     int GetNext(int a, int b) { return a +
 	static_cast<int>( (b - a + 1) / pow( 1 - distribution(generator),  pareto_power)); }

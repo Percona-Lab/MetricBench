@@ -1,45 +1,17 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# YCM
-.ycm_extra*
-
-# cmake
-CMakeCache.txt
-CMakeFiles
-Makefile
-cmake_install.cmake
-install_manifest.txt
-
-# binaries
-MetricBench
-
-# ctags
+**.csv
+build/*
+src/.ycm*
+src/.Config*
+src/CTest*
+src/Testing*
+src/core*
+src/testBin/*
 tags
+src/tags
 
+src/CMakeCache*
+src/CMakeFiles/**
+src/Makefile
+src/MetricBench
+src/cmake_install.cmake
+**.out
