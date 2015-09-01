@@ -6,14 +6,6 @@
 
 #include "Config.hpp"
 
-/* consider adding boost thread id since we'll want to know whose writting and
- * won't want to repeat it for every single call */
-
-/* consider adding policy class to allow users to redirect logging to specific
- * files via the command line
- */
-
-
 class logIt
 {
 public:
