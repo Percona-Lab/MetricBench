@@ -1,4 +1,6 @@
+#include <iostream>
 #include <string>
+
 #include "Config.hpp"
 
 namespace Config
@@ -32,6 +34,10 @@ namespace Config
 
     bool processingComplete = false;
 
-    std::string logLevel = DEFAULT_LOG_LEVEL;
+    loglevel_e logLevel = DEFAULT_LOG_LEVEL;
     std::string logFile = DEFAULT_LOG_FILE;
+
+    std::ostream *log = &std::cout;
+
+    std::mutex log_lock;
 }

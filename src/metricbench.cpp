@@ -1,14 +1,15 @@
-#include <stdlib.h>
-#include <iostream>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <fstream>
-
+#include <stdlib.h>
 #include <thread>
-#include <chrono>
-#include <atomic>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <boost/log/core.hpp>
@@ -16,12 +17,14 @@
 #include <boost/log/expressions.hpp>
 #include <boost/filesystem.hpp>
 
-#include "tsqueue.hpp"
-#include "Preparer.hpp"
-#include "Message.hpp"
-#include "Stats.hpp"
+#include "Logger.hpp"
+#include "Config.hpp"
 #include "LatencyStats.hpp"
+#include "Message.hpp"
+#include "Preparer.hpp"
 #include "SampledStats.hpp"
+#include "Stats.hpp"
+#include "tsqueue.hpp"
 
 using namespace std;
 
@@ -39,6 +42,10 @@ int main(int argc, const char **argv)
 
     std::string runMode = "run";
     std::string runDriver = "mysql";
+
+    // default log level
+    std::string logLevelString = loglevel_e_Label[Config::DEFAULT_LOG_LEVEL];
+    boost::algorithm::to_lower(logLevelString);
 
     // TODO: read these from response file
     po::options_description desc("Command line options");
@@ -77,7 +84,7 @@ int main(int argc, const char **argv)
             "Random seed for pseudo-random numbers\n" "(0 = non-deterministic seed)")
         ("displayfreq", po::value<int>(&Config::displayFreq)->default_value(Config::DEFAULT_DISPLAY_FREQ),
             "Statistics display frequency in seconds, for standard output and CSV streaming.")
-        ("loglevel", po::value<std::string>(&Config::logLevel)->default_value(Config::DEFAULT_LOG_LEVEL),
+        ("loglevel", po::value<string>(&logLevelString)->default_value(logLevelString),
             "Logging level fatal,error,warning,info,debug,trace")
         ("logfile", po::value<std::string>(&Config::logFile)->default_value(Config::DEFAULT_LOG_FILE),
             "Log file")
@@ -96,6 +103,36 @@ int main(int argc, const char **argv)
         cout << desc << "\n";
         return EXIT_FAILURE;
     }
+
+    // initialize logger
+    if (vm.count("loglevel")) {
+        boost::algorithm::to_lower(logLevelString);
+        for (int l=logFATAL; l < logEND; l++) {
+            if (boost::iequals(logLevelString, loglevel_e_Label[l])) {
+              Config::logLevel=(loglevel_e)l;
+            }
+        }
+    }
+
+    // initialize log file
+    std::ofstream logstream;
+    if (vm.count("logfile")) {
+        if (Config::logFile != "-") {
+            logstream.open(Config::logFile,
+                           std::ofstream::out);
+            if (logstream.fail()) {
+              cout << "# ERR: Could not open --logfile file for output: " <<
+                Config::logFile << std::endl;
+              return EXIT_FAILURE;
+            } else {
+                Config::log = &logstream;
+            }
+        }
+    }
+
+    log(logERROR) << "Exiting";
+    return 1;
+
 
     // require mode
     if (runMode.compare("") == 0) {

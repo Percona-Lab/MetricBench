@@ -1,8 +1,21 @@
 #pragma once
 
+#include <mutex>
 #include <string>
 
 using namespace std;
+
+// see Logger.hpp
+
+enum loglevel_e
+    {logFATAL=0, logERROR, logWARNING, logINFO, logDEBUG, logTRACE, logEND};
+
+// MessageType labels for reporting
+const char * const loglevel_e_Label[logEND] = {
+    "FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"
+};
+
+// run mode
 
 enum  RunModeE { PREPARE = 1, RUN };
 
@@ -64,11 +77,17 @@ namespace Config
     extern bool processingComplete;
 
     // log level
-    constexpr auto DEFAULT_LOG_LEVEL = "info";
-    extern std::string logLevel;
+    constexpr loglevel_e DEFAULT_LOG_LEVEL = logINFO;
+    extern loglevel_e logLevel;
 
     // log file
     constexpr auto DEFAULT_LOG_FILE = "-";   // - for stdout
     extern std::string logFile;
+
+    // log stream
+    extern std::ostream *log;
+
+    // log mutex
+    extern std::mutex log_lock;
 
 }
