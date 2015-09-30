@@ -37,12 +37,13 @@ void Stats::statsPrint() {
 
 	totalInserted += cnts;
 
-	log(logINFO) << std::fixed << std::setprecision(2)
-	    << "[Stats] Time: " << secFromStart << "[sec], "
+	std::cout << std::fixed << std::setprecision(2)
+	    << "[Stats] Time: " << secFromStart << "[s], " 
 	    << messageTypeLabel[InsertMetric] << " interval:" << cnts
 	    << ", cum: " << totalInserted
-	    << ", max time(us): " << biggest
-	    << ", 99% time(us): " << pct99 << ", qsize: " << statQueue.size();
+	    << ", max time(μs): " << biggest
+	    << ", 99% time(μs): " << pct99 << ", qsize: " << statQueue.size()
+	    << std::endl;
 
 	cnts = Counts[DeleteDevice];
 
@@ -53,11 +54,32 @@ void Stats::statsPrint() {
 	    biggest = *tmp;
 	    pct99 = percentile(execTimes[DeleteDevice], 0.99);
 
-	    log(logINFO) << std::fixed << std::setprecision(2)
-		<< "[Stats] Time: " << secFromStart << "sec, "
+	    std::cout << std::fixed << std::setprecision(2)
+		<< "[Stats] Time: " << secFromStart << "[s], "
 		<< messageTypeLabel[DeleteDevice] << ": " << cnts
-		<< ", max time(us): " << biggest
-		<< ", 99% time(us): " << pct99;
+		<< ", max time(μs): " << biggest
+		<< ", 99% time(μs): " << pct99
+		<< std::endl;
+	}
+
+	for (int sint = Select_K1; sint<=Select_K3; sint++) {
+		MessageType st = static_cast<MessageType>(sint);
+		cnts = Counts[st];
+		
+		if (cnts > 0){
+
+			auto tmp  = std::max_element(std::begin(execTimes[st]),
+					std::end(execTimes[st]));
+			biggest = *tmp;
+			pct99 = percentile(execTimes[st], 0.99);
+
+			std::cout << std::fixed << std::setprecision(2)
+				<< "[Stats] Time: " << secFromStart <<"[s], "
+				<< messageTypeLabel[st] << ": " << cnts
+				<< ", max time(μs): " << biggest
+				<< ", 99% time(μs): " << pct99
+				<< std::endl;
+		}
 	}
 
 	Counts.clear();

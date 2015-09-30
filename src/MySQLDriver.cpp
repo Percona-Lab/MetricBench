@@ -16,7 +16,7 @@ void MySQLDriver::Prep() {
 }
 
 void MySQLDriver::Run() {
-    const int rs[] = {MessageType::InsertMetric, MessageType::DeleteDevice};
+    const int rs[] = {MessageType::InsertMetric, MessageType::DeleteDevice,  MessageType::Select_K1, MessageType::Select_K2};
     const std::vector<int> runStats(rs, end(rs));
 
     for (int i = 0; i < Config::LoaderThreads; i++) {
@@ -39,7 +39,8 @@ GenericDriver::ts_range MySQLDriver::getTimestampRange(unsigned int table_id) {
     GenericDriver::ts_range ret={(uint64_t)-1,0};
 
     ret.min = Config::StartTimestamp;
-    ret.max = Config::StartTimestamp + (Config::LoadMins * 60);
+    ret.max = Config::StartTimestamp;
+// + (Config::LoadMins * 60);
 
     // if table_id == 0 then iterate over all tables to find the maxTimestamp
     // value
@@ -157,6 +158,12 @@ GenericDriver::dev_range MySQLDriver::getDeviceRange(GenericDriver::ts_range tsR
                       break;
                   case Delete: DeleteQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
                       break;
+                  case Select_K1: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K1);
+                      break;
+                  case Select_K2: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K2);
+                      break;
+                  case Select_K3: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K3);
+                      break;
                   default:
                       break;
               }
@@ -207,8 +214,9 @@ void MySQLDriver::InsertQuery(int threadId,
           seed=rd();
         }
 	std::mt19937 gen(seed);
-	std::uniform_int_distribution<> dis(1, Config::MaxMetrics);
+	std::normal_distribution<> dis(Config::MaxMetrics/2,Config::MaxMetrics/15);
 
+	// we only insert Config::MaxMetricsPerTs per given timestamp
 	auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
 
 	sql.str("");
@@ -221,7 +229,9 @@ void MySQLDriver::InsertQuery(int threadId,
 	std::unordered_set< int > s;
 	while (s.size() < metricsCnt) {
 	    auto size_b = s.size();
-	    auto mc = dis(gen);
+	    int mc = std::round(dis(gen));
+	    if (mc < 1) { continue; }
+	    if (mc > Config::MaxMetrics) { continue; }
 	    s.insert(mc);
 	    if (size_b==s.size()) { continue; }
 
@@ -346,6 +356,91 @@ void MySQLDriver::DeleteQuery(int threadId,
 
 }
 
+void MySQLDriver::SelectQuery(int threadId,
+                              unsigned int table_id,
+                              unsigned int timestamp,
+                              unsigned int device_id,
+                              sql::Statement & stmt,
+                              SampledStats & stats, 
+			      MessageType mt) {
+
+    stringstream sql;
+
+    unsigned int seed=Config::randomSeed;
+    if (!seed) {
+	std::random_device rd;
+	seed=rd();
+    }
+    std::mt19937 gen(seed);
+    std::normal_distribution<> dis(Config::MaxMetrics/2,Config::MaxMetrics/15);
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    try {
+
+	sql.str("");
+	switch(mt) {
+		case Select_K1:
+			sql << "SELECT count(distinct metric_id) FROM metrics"<<table_id
+				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 1 HOUR)"
+				<< " AND device_id=" << device_id;
+			break;
+		case Select_K2: {
+			int metric_id = std::round(dis(gen));
+			if (metric_id < 1) { metric_id=1; }
+			if (metric_id > Config::MaxMetrics) { metric_id=Config::MaxMetrics; }
+			sql << "SELECT ts,device_id,val FROM metrics"<<table_id
+				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 20 MINUTE)"
+				<< " AND metric_id=" << metric_id;
+			break; }
+		case Select_K3:
+			sql << "SELECT device_id,metric_id,avg(val) FROM metrics"<<table_id
+				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 5 MINUTE)"
+				<< " GROUP BY 1,2 LIMIT 100";
+			break;
+		default:
+			break;
+	}
+	
+
+	t0 = std::chrono::high_resolution_clock::now();
+	auto res = stmt.executeQuery(sql.str());
+	auto rows = 0;
+	while (res->next()) {
+		rows++;
+	}
+	delete res;
+
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
+
+        //if (latencyStats) {
+        //  latencyStats->recordLatency(threadId, Select, time_us);
+        //}
+
+        if (ostreamSet) {
+          stats.addStats(mt, time_us/1000, false);
+        }
+
+	StatMessage sm(mt, time_us, 1);
+	statQueue.push(sm);
+
+    } catch (sql::SQLException &e) {
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
+        if (ostreamSet) {
+          stats.addStats(mt, time_ms, true);
+        }
+	cout << "# ERR: SQLException in " << __FILE__;
+	cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+	cout << "# ERR: " << e.what();
+	cout << " (MySQL error code: " << e.getErrorCode();
+	cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	throw std::runtime_error ("Can't execute DELETE");
+    }
+
+}
+
 /* handle creation of DB schema */
 void MySQLDriver::CreateSchema() {
 
@@ -372,10 +467,9 @@ void MySQLDriver::CreateSchema() {
 		    cnt int(10) unsigned NOT NULL,\
 		    val double DEFAULT NULL,\
 		    PRIMARY KEY (device_id, metric_id, ts),\
-		    KEY k1 (ts, device_id, metric_id, val),\
-		    KEY k2 (device_id, ts, metric_id, val),\
-		    KEY k3 (metric_id, ts, device_id, val),\
-		    KEY k4 (ts, metric_id, val)\
+		    KEY k1 (device_id, ts, metric_id, val),\
+		    KEY k2 (metric_id, ts, val),\
+		    KEY k3 (ts, val)\
 		    ) ENGINE=" + Config::storageEngine + " " + Config::storageEngineExtra +" DEFAULT CHARSET=latin1;");
 
 

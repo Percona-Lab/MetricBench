@@ -2,12 +2,25 @@
 
 enum MessageType
 {
-    Insert=0, Delete, InsertMetric, DeleteDevice, messageEND
+	Insert=0, 
+	Delete, 
+	InsertMetric, 
+	DeleteDevice, 
+	Select_K1, 
+	Select_K2, 
+	Select_K3, 
+	messageEND
 };
 
 // MessageType labels for reporting
 const char * const messageTypeLabel[messageEND] = {
-  "Insert", "Delete", "InsertMetric", "DeleteDevice"
+	"Insert", 
+	"Delete", 
+	"InsertMetric", 
+	"DeleteDevice", 
+	"Select_K1", 
+	"Select_K2",
+	"Select_K3"
 };
 
 class Message {
