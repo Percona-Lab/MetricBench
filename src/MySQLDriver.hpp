@@ -69,5 +69,11 @@ private:
                      unsigned int device_id,
                      sql::Statement & stmt,
                      SampledStats & stats);
-
+    void SelectQuery(int threadId,
+                     unsigned int table_id,
+                     unsigned int timestamp,
+                     unsigned int device_id,
+                     sql::Statement & stmt,
+                     SampledStats & stats,
+		     MessageType mt);
 };
