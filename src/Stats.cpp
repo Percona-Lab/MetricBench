@@ -74,10 +74,10 @@ void Stats::statsPrint() {
 			pct99 = percentile(execTimes[st], 0.99);
 
 			std::cout << std::fixed << std::setprecision(2)
-				<< "[Stats] Time: " << secFromStart <<[ ], "
+				<< "[Stats] Time: " << secFromStart <<"[s], "
 				<< messageTypeLabel[st] << ": " << cnts
-				<< ", max time(us): " << biggest
-				<< ", 99% time(us): " << pct99
+				<< ", max time(μs): " << biggest
+				<< ", 99% time(μs): " << pct99
 				<< std::endl;
 		}
 	}
