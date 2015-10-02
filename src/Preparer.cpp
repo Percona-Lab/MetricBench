@@ -119,8 +119,6 @@ void Preparer::Run(){
 	<< endTimestamp - startTimestamp
 	<< endl;
 
-	std::default_random_engine generator;
-  	std::uniform_int_distribution<int> distribution(Select_K1, Select_K3);
 
         /* Time loop */
         for (auto ts=startTimestamp; ts <= endTimestamp; ts += 60) {
@@ -146,18 +144,7 @@ void Preparer::Run(){
 			       }
 			     */
 		    }
-	    unsigned int select_device_id = PGen->GetNext(dc, 0);
-	    unsigned int select_table_id = PGen->GetNext(Config::DBTables, 0);
-
-	    /* choose randomly K1 or K2 (or more) later */
-	    MessageType mt = static_cast<MessageType>(distribution(generator));
-	    Message m(mt, ts, select_device_id, select_table_id);
-	    tsQueue.push(m);
-	    //Message m1(Select_K2, ts, select_device_id, select_table_id);
-	    //tsQueue.push(m1);
-	    //Message m2(Select_K3, ts, select_device_id, select_table_id);
-	    //tsQueue.push(m2);
-	}
+	    }
 
 
         // advance our trailing delete

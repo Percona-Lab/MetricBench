@@ -57,6 +57,7 @@ public:
 
 private:
     void InsertData(const int threadId, const std::vector<int> &);
+    void SelectData(const std::vector<int> &);
     void InsertQuery(int threadId,
 	unsigned int table_id,
 	unsigned int timestamp,
@@ -69,9 +70,7 @@ private:
                      unsigned int device_id,
                      sql::Statement & stmt,
                      SampledStats & stats);
-    void SelectQuery(int threadId,
-                     unsigned int table_id,
-                     unsigned int timestamp,
+    void SelectQuery(unsigned int table_id,
                      unsigned int device_id,
                      sql::Statement & stmt,
                      SampledStats & stats,
