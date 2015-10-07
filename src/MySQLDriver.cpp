@@ -431,7 +431,7 @@ void MySQLDriver::SelectQuery(unsigned int table_id,
 	switch(mt) {
 		case Select_K1:
 			sql << "SELECT count(distinct metric_id) FROM metrics"<<table_id
-				<< ", (select max(ts) mt from metrics8) t1"
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
 				<< " WHERE ts >= DATE_SUB(t1.mt, INTERVAL 1 HOUR)"
 				<< " AND device_id=" << device_id;
 			break;
@@ -440,14 +440,14 @@ void MySQLDriver::SelectQuery(unsigned int table_id,
 			if (metric_id < 1) { metric_id=1; }
 			if (metric_id > Config::MaxMetrics) { metric_id=Config::MaxMetrics; }
 			sql << "SELECT ts,device_id,val FROM metrics"<<table_id
-				<< ", (select max(ts) mt from metrics8) t1"
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
 				<< " WHERE ts >= DATE_SUB(t1.mt, INTERVAL 20 MINUTE)"
 				<< " AND metric_id=" << metric_id;
 			break; }
 		case Select_K3:
-			sql << "SELECT device_id,metric_id,avg(val) FROM metrics"<<table_id
-				<< ", (select max(ts) mt from metrics8) t1"
-				<< " WHERE ts >= DATE_SUB(t1.mt, INTERVAL 5 MINUTE)"
+			sql << "SELECT device_id,metric_id,max(val) FROM metrics"<<table_id
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
+				<< " WHERE ts = DATE_SUB(t1.mt, INTERVAL 1 MINUTE) and val >= 9900"
 				<< " GROUP BY 1,2 LIMIT 100";
 			break;
 		default:
