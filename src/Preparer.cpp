@@ -67,8 +67,8 @@ void Preparer::Prep(){
             ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
 
             /* tables loop */
-            for (auto table = 1; table <= Config::DBTables; table++) {
-                Message m(Insert, ts, dc, table);
+            for (auto table_id = 1; table_id <= Config::DBTables; table_id++) {
+                Message m(Insert, ts, dc, table_id);
                 tsQueue.push(m);
             }
             insertProgress+=Config::DBTables;
@@ -124,19 +124,17 @@ void Preparer::Run(){
         for (auto ts=startTimestamp; ts <= endTimestamp; ts += 60) {
 
             unsigned int devicesCnt = PGen->GetNext(Config::MaxDevices, 0);
-            GenericDriver::dev_range deviceRange = DataLoader->getDeviceRange({0,0},0);
-            unsigned int oldDevicesCnt = deviceRange.max;
+            //GenericDriver::dev_range deviceRange = DataLoader->getDeviceRange({0,0},0);
+            //unsigned int oldDevicesCnt = deviceRange.max;
 
             /* Devices loop */
-            for (auto dc = 1; dc <= max(devicesCnt,oldDevicesCnt) ; dc++) {
+            for (auto dc = 1; dc <= devicesCnt ; dc++) {
 
 		    /* Table/Collection loop */
-		    for (unsigned int table_id=1; table_id <= Config::DBTables; table_id++) {
+		    for (auto table_id=1; table_id <= Config::DBTables; table_id++) {
 
-			    if (dc <= devicesCnt) {
-				    Message m(Insert, ts, dc, table_id);
-				    tsQueue.push(m);
-			    }
+			    Message m(Insert, ts, dc, table_id);
+			    tsQueue.push(m);
 			    /* do not do DELETE for now, add by option 
 			       if (dc <= oldDevicesCnt) {
 			       Message m(Delete, deleteTimestamp, dc, table_id);
@@ -150,7 +148,7 @@ void Preparer::Run(){
         // advance our trailing delete
         deleteTimestamp += 60;
 
-	tsQueue.wait_size(Config::LoaderThreads*10);
+	tsQueue.wait_size(Config::LoaderThreads*100000);
 	insertProgress = ts;
     }
 
