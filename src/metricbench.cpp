@@ -204,6 +204,8 @@ int main(int argc, const char **argv)
         GenDrive = new MySQLDriver(user, pass, database, url);
     } else if (runDriver == "mongodb") {
 	GenDrive = new MongoDBDriver(user, pass, database, url);
+    } else if (runDriver == "cassandra") {
+	GenDrive = new CassandraDriver(user, pass, database, url);
     }
 
     GenDrive->SetGenerator(&PG);

@@ -7,6 +7,7 @@ if (BUILD_STATIC)
   message(STATUS "Building static binary")
   set(MYSQLCPPCONN_LIB_NAME "mysqlcppconn-static")
   set(MONGO_LIB_NAME "mongoclient")
+  set(CASS_LIB_NAME "cassandra")
   set(Boost_USE_STATIC_LIBS ON)
   set(CXX_BUILD_FLAGS "-static")
   set(LINK_BUILD_FLAGS "-static -pthread -Wl,--no-as-needed")
@@ -19,6 +20,7 @@ else()
   message(STATUS "Building a dynamically linked binary")
   set(MYSQLCPPCONN_LIB_NAME "mysqlcppconn")
   set(MONGO_LIB_NAME "mongoclient")
+  set(CASS_LIB_NAME "cassandra")
   set(Boost_USE_STATIC_LIBS OFF)
   set(CXX_BUILD_FLAGS "")
   set(LINK_BUILD_FLAGS "")
@@ -103,13 +105,42 @@ find_library(MONGO_LIBRARY
 
 message(STATUS ${MONGO_LIBRARY})
 
+# Find the Cassandra library locations
+
+set(CASS_LIB_ROOT_DIR
+        "${CASS_LIB_ROOT_DIR}"
+        CACHE
+        PATH
+        "Where to start looking for this component.")
+
+find_path(CASS_LIB_INCLUDE_DIR
+        cassandra.h
+        HINTS
+        ${CASS_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_cassandra-cxx-driver
+        PATH_SUFFIXES
+        include)
+
+find_library(CASS_LIBRARY
+        NAMES
+        ${CASS_LIB_NAME}
+        HINTS
+        ${CASS_LIB_ROOT_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../build/MetricBench_cassandra-cxx-driver
+        PATH_SUFFIXES
+        lib64
+        lib
+        lib/x86_64-linux-gnu)
+
+message(STATUS ${CASS_LIBRARY})
+
 # Configure Boost packages
 
 find_package(Boost REQUIRED COMPONENTS program_options system-mt filesystem thread-mt regex)
 
 # Configure header directories
 
-include_directories( ${Boost_INCLUDE_DIRS} ${MYSQLCONNECTORCPP_INCLUDE_DIR} ${MONGO_LIB_INCLUDE_DIR} )
+include_directories( ${Boost_INCLUDE_DIRS} ${MYSQLCONNECTORCPP_INCLUDE_DIR} ${MONGO_LIB_INCLUDE_DIR} ${CASS_LIB_INCLUDE_DIR} )
 
 # MySQL client C/C++ headers and libraries are required
 
@@ -128,13 +159,13 @@ add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
 # MetricBench binary settings
 
 add_executable(MetricBench metricbench.cpp Preparer.cpp MySQLDriver.cpp MongoDBDriver.cpp 
-  Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp SampledStats.cpp)
+  CassandraDriver.cpp Config.cpp Stats.cpp Message.cpp RunningMean.cpp LatencyStats.cpp Uri.cpp SampledStats.cpp)
 
 set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
 
 target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT} 
-  ${MONGO_LIBRARY} ${Boost_LIBRARIES} ${PTHREAD_LIB} m rt dl z c)
+  ${MONGO_LIBRARY} ${CASS_LIBRARY} ${Boost_LIBRARIES} ${PTHREAD_LIB} m rt dl z c)
 
 # Unit Tests
 

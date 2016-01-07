@@ -59,26 +59,26 @@ void Preparer::Prep(){
 	<< startTimestamp + Config::LoadMins * 60 - startTimestamp
 	<< endl;
 
-    /* Device Loop */
-    for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
+	/* Time Loop */
+	for (uint64_t ts = startTimestamp;
+			ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
+		/* Device Loop */
+		for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
 
-        /* Time Loop */
-        for (uint64_t ts = startTimestamp;
-            ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
 
-            /* tables loop */
-            for (auto table_id = 1; table_id <= Config::DBTables; table_id++) {
-                Message m(Insert, ts, dc, table_id);
-                tsQueue.push(m);
-            }
-            insertProgress+=Config::DBTables;
-            //cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
-            tsQueue.wait_size(Config::LoaderThreads*2);
-        }
+			/* tables loop */
+			for (auto table_id = 1; table_id <= Config::DBTables; table_id++) {
+				Message m(Insert, ts, dc, table_id);
+				tsQueue.push(m);
+			}
+			insertProgress+=Config::DBTables;
+			//cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
+			tsQueue.wait_size(Config::LoaderThreads*2);
+		}
 
-	tsQueue.wait_empty();
+		tsQueue.wait_empty();
 
-    }
+	}
 
     cout << "#\t Data Load Finished" << endl;
     progressLoad = false;
