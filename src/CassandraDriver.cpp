@@ -37,6 +37,8 @@ CassError CassandraDriver::execute_query(CassSession* session, const char* query
   future = cass_session_execute(session, statement);
   cass_future_wait(future);
 
+  //cout << "Query: " << query << endl;
+
   rc = cass_future_error_code(future);
   if (rc != CASS_OK) {
     const char* message;
@@ -77,9 +79,19 @@ GenericDriver::dev_range CassandraDriver::getDeviceRange(GenericDriver::ts_range
 void CassandraDriver::InsertData(int threadId, const std::vector<int> & showStats) {
 
     CassFuture* connect_future = NULL;
-    CassCluster* cluster = cass_cluster_new();
     CassSession* session = cass_session_new();
+    //cass_cluster_set_contact_points(cluster, "10.60.23.57,10.60.23.184");
+    CassCluster* cluster = cass_cluster_new();
+    cass_cluster_set_protocol_version(cluster, 3);
     cass_cluster_set_contact_points(cluster, "127.0.0.1");
+
+    cass_cluster_set_num_threads_io(cluster, 4);
+    cass_cluster_set_queue_size_io(cluster, 10000);
+    cass_cluster_set_pending_requests_low_water_mark(cluster, 5000);
+    cass_cluster_set_pending_requests_high_water_mark(cluster, 10000);
+    cass_cluster_set_core_connections_per_host(cluster, 1);
+    cass_cluster_set_max_connections_per_host(cluster, 2);
+    cass_cluster_set_max_requests_per_flush(cluster, 10000);
 
     connect_future = cass_session_connect(session, cluster);
 
@@ -168,6 +180,10 @@ void CassandraDriver::InsertQuery(int threadId,
 
     auto metricsCnt = PGen->GetNext(Config::MaxMetricsPerTs, 0);
 
+    CassError rc = CASS_OK;
+    CassFuture* future = NULL;
+    CassBatch* batch = cass_batch_new(CASS_BATCH_TYPE_LOGGED);
+
     /* metrics loop */
     std::unordered_set< int > s;
     while (s.size() < metricsCnt) {
@@ -186,9 +202,26 @@ void CassandraDriver::InsertQuery(int threadId,
 		  timestamp*1000 << "," <<
             	  PGen->GetNext(Config::MaxCnt, 0) << "," <<
             	  (v < 0.5 ? 0 : v) << ");";
-	    execute_query(session,sql.str().c_str());
+	    //execute_query(session,sql.str().c_str());
+	    CassStatement* statement = cass_statement_new(sql.str().c_str(),0);
+	    cass_batch_add_statement(batch, statement);
+	    cass_statement_free(statement);
 	    //cout << "Query: " << sql.str() << endl;
     }
+
+   future = cass_session_execute_batch(session, batch);
+   cass_future_wait(future);
+   rc = cass_future_error_code(future);
+   if (rc != CASS_OK) {
+	    /* Handle error */
+	    const char* message ;
+	    size_t message_length;
+	    cass_future_error_message(future, &message, &message_length);
+	    cerr <<  "Unable to connect: " << message << endl;
+   }
+
+  cass_future_free(future);
+  cass_batch_free(batch);
 
 
 
@@ -213,6 +246,7 @@ void CassandraDriver::CreateSchema() {
     CassFuture* connect_future = NULL;
     CassCluster* cluster = cass_cluster_new();
     CassSession* session = cass_session_new();
+    //cass_cluster_set_contact_points(cluster, "10.60.23.57,10.60.23.184");
     cass_cluster_set_contact_points(cluster, "127.0.0.1");
 
     connect_future = cass_session_connect(session, cluster);
