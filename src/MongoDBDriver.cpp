@@ -81,8 +81,42 @@ GenericDriver::dev_range MongoDBDriver::getDeviceRange(GenericDriver::ts_range, 
 
 GenericDriver::ts_range MongoDBDriver::getTimestampRange(unsigned int collection_id) {
 
-    // TODO: implement
-    ts_range ret={0,0};
+    mongo::DBClientConnection c;
+    getConnection(c);
+
+    GenericDriver::ts_range ret={(uint64_t)-1,0};
+
+    ret.min = Config::StartTimestamp;
+    ret.max = Config::StartTimestamp;
+    unsigned int start_table=1;
+    unsigned int end_table=Config::DBTables;
+
+    if (collection_id) {
+      auto start_table = end_table = collection_id;
+    }
+
+    for (auto table=start_table; table <= end_table; table++) {
+	//auto_ptr<mongo::DBClientCursor> cursor = c.query(
+	//	database+".metrics"+std::to_string(table), 
+	//	 mongo::Query().sort("ts", -1));
+	 mongo::BSONObj max_ts= c.findOne(
+		database+".metrics"+std::to_string(table), 
+		 mongo::Query().sort("ts", -1));
+	if (!max_ts.isEmpty()) { 
+                auto be = max_ts.getField("ts");
+	    	ret.max = std::max(ret.max, static_cast<long unsigned int>(be.Int()));
+        } 
+	/*
+	if (res->next()) {
+	    ret.min = std::min(ret.min, res->getUInt64("mints"));
+	    ret.max = std::max(ret.max, res->getUInt64("maxts"));
+	}
+	*/
+        // nothing set
+        if (ret.min == -1) {
+          ret.min=0;
+        }
+    }
 
     return ret;
 
@@ -124,7 +158,7 @@ void MongoDBDriver::InsertData(int threadId, const std::vector<int> & showStats)
                 std::chrono::high_resolution_clock::now().time_since_epoch()
             ).count();
 
-        if (endTime - lastDisplayTime > Config::displayFreq * 1000) {
+        if (ostreamSet && endTime - lastDisplayTime > Config::displayFreq * 1000) {
           stats.displayStats(lastDisplayTime, endTime, showStats);
           lastDisplayTime = endTime;
         }
@@ -136,7 +170,9 @@ void MongoDBDriver::InsertData(int threadId, const std::vector<int> & showStats)
           std::chrono::high_resolution_clock::now().time_since_epoch()
       ).count();
 
-    stats.displayStats(lastDisplayTime, endTime, showStats);
+    if (ostreamSet) {
+        stats.displayStats(lastDisplayTime, endTime, showStats);
+    }
 
 }
 
@@ -187,11 +223,11 @@ void MongoDBDriver::InsertQuery(int threadId,
     auto t1 = std::chrono::high_resolution_clock::now();
     auto time_us = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
 
-    if (latencyStats) {
-        latencyStats->recordLatency(threadId, InsertMetric, time_us);
-    }
+    //if (latencyStats) {
+    //    latencyStats->recordLatency(threadId, InsertMetric, time_us);
+    //}
 
-    if (ostreamSampledStats) {
+    if (ostreamSet) {
         stats.addStats(InsertMetric, time_us/1000, false);
     }
 
@@ -226,32 +262,23 @@ void MongoDBDriver::CreateSchema() {
 				"device_id" << 1 <<
 				"metric_id" << 1 <<
 				"ts" << 1 )).unique() );
-		   // KEY k1 (ts, device_id, metric_id, val),
-			c.createIndex(database+".metrics"+std::to_string(table),
-				BSON (
-				"ts" << 1 <<
-				"device_id" << 1 <<
-				"metric_id" << 1 <<
-				"val" << 1 ));
-		   // KEY k4 (ts, metric_id, val)
-			c.createIndex(database+".metrics"+std::to_string(table),
-				BSON (
-				"ts" << 1 <<
-				"metric_id" << 1 <<
-				"val" << 1 ));
-		   // KEY k2 (device_id, ts, metric_id, val),
+		   // KEY k1 (device_id, ts, metric_id, val),
 			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"device_id" << 1 <<
 				"ts" << 1 <<
 				"metric_id" << 1 <<
 				"val" << 1 ));
-		   // KEY k3 (metric_id, ts, device_id, val),
+		   // KEY k2 (metric_id, ts, val),
 			c.createIndex(database+".metrics"+std::to_string(table),
 				BSON (
 				"metric_id" << 1 <<
 				"ts" << 1 <<
-				"device_id" << 1 <<
+				"val" << 1 ));
+		   // KEY k3 (ts, val)
+			c.createIndex(database+".metrics"+std::to_string(table),
+				BSON (
+				"ts" << 1 <<
 				"val" << 1 ));
 
 		}

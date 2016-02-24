@@ -13,22 +13,12 @@
 #include <thread>
 #include <unordered_set>
 
-#include "mysql_driver.h"
-#include "mysql_connection.h"
 
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/warning.h>
-#include <cppconn/metadata.h>
-#include <cppconn/prepared_statement.h>
-#include <cppconn/resultset.h>
-#include <cppconn/resultset_metadata.h>
-#include <cppconn/statement.h>
+#include <cassandra.h>
 
 #include "Config.hpp"
 #include "GenericDriver.hpp"
 #include "LatencyStats.hpp"
-#include "Logger.hpp"
 #include "Message.hpp"
 #include "pareto.hpp"
 #include "SampledStats.hpp"
@@ -36,10 +26,10 @@
 
 using namespace std;
 
-class MySQLDriver : public GenericDriver {
+class CassandraDriver : public GenericDriver {
 
 public:
-    MySQLDriver(const string user,
+    CassandraDriver(const string user,
 	    const string pass,
 	    const string database,
 	    const string url) :
@@ -59,21 +49,11 @@ public:
 private:
     void InsertData(const int threadId, const std::vector<int> &);
     void SelectData(const std::vector<int> &);
+    CassError execute_query(CassSession* session, const char* query);
     void InsertQuery(int threadId,
 	unsigned int table_id,
 	unsigned int timestamp,
-	unsigned int device_id,
-	sql::Statement & stmt,
+	unsigned int device_id, 
+	CassSession* session,
         SampledStats & stats);
-    void DeleteQuery(int threadId,
-                     unsigned int table_id,
-                     unsigned int timestamp,
-                     unsigned int device_id,
-                     sql::Statement & stmt,
-                     SampledStats & stats);
-    void SelectQuery(unsigned int table_id,
-                     unsigned int device_id,
-                     sql::Statement & stmt,
-                     SampledStats & stats,
-		     MessageType mt);
 };

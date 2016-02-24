@@ -11,6 +11,7 @@
 
 #include "MySQLDriver.hpp"
 #include "MongoDBDriver.hpp"
+#include "CassandraDriver.hpp"
 #include "Config.hpp"
 #include "LatencyStats.hpp"
 #include "Logger.hpp"

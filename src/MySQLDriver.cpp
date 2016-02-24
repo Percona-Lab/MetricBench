@@ -24,6 +24,9 @@ void MySQLDriver::Run() {
         threads.push_back(move(threadInsertData));
     }
 
+    std::thread threadSelectData([this,runStats](){ SelectData(runStats); });
+    threads.push_back(move(threadSelectData));
+
 }
 
 
@@ -158,12 +161,6 @@ GenericDriver::dev_range MySQLDriver::getDeviceRange(GenericDriver::ts_range tsR
                       break;
                   case Delete: DeleteQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats);
                       break;
-                  case Select_K1: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K1);
-                      break;
-                  case Select_K2: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K2);
-                      break;
-                  case Select_K3: SelectQuery(threadId, m.table_id, m.ts, m.device_id, *stmt, stats, Select_K3);
-                      break;
                   default:
                       break;
               }
@@ -188,6 +185,65 @@ GenericDriver::dev_range MySQLDriver::getDeviceRange(GenericDriver::ts_range tsR
       stmt->close();
     con->close();
     driver->threadEnd();
+
+    if (ostreamSet) {
+        stats.displayStats(lastDisplayTime, endTime, showStats);
+    }
+
+}
+
+  /* This thread waits executes select queries in a loop */
+  void MySQLDriver::SelectData(const std::vector<int> & showStats) {
+
+      cout << "SelectData thread started" << endl;
+      sql::Driver * driver = sql::mysql::get_driver_instance();
+      std::unique_ptr< sql::Connection > con(driver->connect(url, user, pass));
+      SampledStats stats(0, Config::maxsamples, *ostreamSampledStats);
+
+      con->setSchema(database);
+
+      std::unique_ptr< sql::Statement > stmt(con->createStatement());
+
+      Message m;
+
+      int64_t lastDisplayTime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch()
+        ).count();
+
+      std::default_random_engine generator;
+      std::uniform_int_distribution<int> distribution(Select_K1, Select_K3);
+
+      while(!Config::processingComplete) {
+          /* Generate SELECT query to execute */
+
+	    unsigned int select_device_id = PGen->GetNext(Config::MaxDevices, 0);
+	    unsigned int select_table_id = PGen->GetNext(Config::DBTables, 0);
+
+	    /* choose randomly K1 - K3  */
+	    MessageType mt = static_cast<MessageType>(distribution(generator));
+
+            SelectQuery(select_table_id, select_device_id, *stmt, stats, mt);
+
+              int64_t endTime =
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::high_resolution_clock::now().time_since_epoch()
+                  ).count();
+
+              if (ostreamSet && endTime - lastDisplayTime > Config::displayFreq * 1000) {
+                stats.displayStats(lastDisplayTime, endTime, showStats);
+                lastDisplayTime = endTime;
+              }
+      }
+
+      int64_t endTime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch()
+        ).count();
+
+      stmt->close();
+      con->close();
+      driver->threadEnd();
 
     if (ostreamSet) {
         stats.displayStats(lastDisplayTime, endTime, showStats);
@@ -356,9 +412,7 @@ void MySQLDriver::DeleteQuery(int threadId,
 
 }
 
-void MySQLDriver::SelectQuery(int threadId,
-                              unsigned int table_id,
-                              unsigned int timestamp,
+void MySQLDriver::SelectQuery(unsigned int table_id,
                               unsigned int device_id,
                               sql::Statement & stmt,
                               SampledStats & stats, 
@@ -382,7 +436,8 @@ void MySQLDriver::SelectQuery(int threadId,
 	switch(mt) {
 		case Select_K1:
 			sql << "SELECT count(distinct metric_id) FROM metrics"<<table_id
-				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 1 HOUR)"
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
+				<< " WHERE ts >= DATE_SUB(t1.mt, INTERVAL 1 HOUR)"
 				<< " AND device_id=" << device_id;
 			break;
 		case Select_K2: {
@@ -390,12 +445,14 @@ void MySQLDriver::SelectQuery(int threadId,
 			if (metric_id < 1) { metric_id=1; }
 			if (metric_id > Config::MaxMetrics) { metric_id=Config::MaxMetrics; }
 			sql << "SELECT ts,device_id,val FROM metrics"<<table_id
-				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 20 MINUTE)"
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
+				<< " WHERE ts >= DATE_SUB(t1.mt, INTERVAL 20 MINUTE)"
 				<< " AND metric_id=" << metric_id;
 			break; }
 		case Select_K3:
-			sql << "SELECT device_id,metric_id,avg(val) FROM metrics"<<table_id
-				<< " WHERE ts >= DATE_SUB(from_unixtime(" << timestamp << "), INTERVAL 5 MINUTE)"
+			sql << "SELECT device_id,metric_id,max(val) FROM metrics"<<table_id
+				<< ", (select max(ts) mt from metrics"<<table_id<<") t1"
+				<< " WHERE ts = DATE_SUB(t1.mt, INTERVAL 1 MINUTE) and val >= 9900"
 				<< " GROUP BY 1,2 LIMIT 100";
 			break;
 		default:
