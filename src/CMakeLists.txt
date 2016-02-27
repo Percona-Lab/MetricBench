@@ -7,7 +7,7 @@ if (BUILD_STATIC)
   message(STATUS "Building static binary")
   set(MYSQLCPPCONN_LIB_NAME "mysqlcppconn-static")
   set(MONGO_LIB_NAME "mongoclient")
-  set(CASS_LIB_NAME "cassandra")
+  set(CASS_LIB_NAME "cassandra_static")
   set(Boost_USE_STATIC_LIBS ON)
   set(CXX_BUILD_FLAGS "-static")
   set(LINK_BUILD_FLAGS "-static -pthread -Wl,--no-as-needed")
@@ -165,7 +165,7 @@ set_target_properties(MetricBench PROPERTIES
   LINK_FLAGS "${LINK_BUILD_FLAGS}")
 
 target_link_libraries (MetricBench ${MYSQLCONNECTORCPP_LIBRARY} ${MYSQL_CLIENT} 
-  ${MONGO_LIBRARY} ${CASS_LIBRARY} ${Boost_LIBRARIES} ${PTHREAD_LIB} m rt dl z c)
+  ${MONGO_LIBRARY} ${CASS_LIBRARY} ${Boost_LIBRARIES} ${PTHREAD_LIB} uv m rt dl z c)
 
 # Unit Tests
 
