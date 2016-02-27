@@ -18,8 +18,8 @@
 
 # david.bennett at percona.com - 6/9/2015
 
-BUILD_STATIC=0
-BUILD_TYPE=Debug
+BUILD_STATIC=1
+BUILD_TYPE=Release
 
 # determine if we are running from inside of
 # the MetricBench repository or we are running
@@ -100,12 +100,12 @@ export BOOST_ROOT
 
 cd ${BUILD_ROOT}
 if [ ! -d "${BUILD_ROOT}/mysql-connector-cpp" ]; then
-  bzr branch lp:~mysql/mysql-connector-cpp/trunk mysql-connector-cpp
+  git clone https://github.com/dbpercona/mysql-connector-cpp.git
 fi
 cd mysql-connector-cpp
-bzr revert -r1.1.5
+git checkout 1.1.7.db
 MYSQLCONNECTORCPP_ROOT_DIR=${BUILD_ROOT}/MetricBench_mysqlcpp
-if [ ! -d "${BUILD_ROOT}/MetricBench_mysqlcpp"] || \
+if [ ! -d "${BUILD_ROOT}/MetricBench_mysqlcpp" ] || \
    [ "$(find ${BUILD_ROOT}/MetricBench_mysqlcpp/ \( -name '*.a' -or -name '*.so' \) | wc -l)" == "0" ]; then
   cmake -DMYSQLCLIENT_STATIC_BINDING:BOOL=1 -DCMAKE_INSTALL_PREFIX:PATH=${MYSQLCONNECTORCPP_ROOT_DIR} .
   make install
@@ -119,7 +119,7 @@ if [ ! -d "${BUILD_ROOT}/mongo-cxx-driver" ]; then
   git clone https://github.com/mongodb/mongo-cxx-driver.git
 fi
 cd mongo-cxx-driver
-git checkout legacy
+git checkout legacy-1.1.0
 MONGO_LIB_ROOT_DIR=${BUILD_ROOT}/MetricBench_mongo-cxx-driver
 if [ ! -d "${MONGO_LIB_ROOT_DIR}" ] || \
    [ "$(find ${MONGO_LIB_ROOT_DIR} \( -name '*.a' -or -name '*.so' \) | wc -l)" == "0" ]; then
