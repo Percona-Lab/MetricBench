@@ -151,14 +151,14 @@ int main(int argc, const char **argv)
 
     // require mode
     if (runMode.compare("") == 0) {
-        log(logERROR) << "ERROR: You must specify --mode.  Use --help for information.";
+        log(logERROR) << "You must specify --mode.  Use --help for information.";
         return EXIT_FAILURE;
     }
 
     // validate driver
 
     if (runDriver.compare("") == 0) {
-        log(logERROR) << "ERROR: You must specify --driver.  Use --help for information.";
+        log(logERROR) << "You must specify --driver.  Use --help for information.";
         return EXIT_FAILURE;
     }
 
@@ -171,7 +171,7 @@ int main(int argc, const char **argv)
       }
     }
     if (!validDriver) {
-      log(logERROR) << "ERROR: Invalid driver specified: " << runDriver;
+      log(logERROR) << "Invalid driver specified: " << runDriver;
       return EXIT_FAILURE;
     }
 
@@ -293,7 +293,7 @@ int main(int argc, const char **argv)
 
         } catch (std::runtime_error &e) {
 
-            log(logERROR) << "# ERR: runtime_error in " << __FILE__;
+            log(logERROR) << "runtime_error in " << __FILE__;
             log(logERROR) << "(" << __FUNCTION__ << ") on line " << __LINE__;
             log(logERROR) << "# ERR: " << e.what();
 
