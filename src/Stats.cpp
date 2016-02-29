@@ -96,7 +96,7 @@ void Stats::Run() {
     /* create thread printing progress */
     std::thread statReporter(&Stats::statsPrint, this);
 
-    std::cout << "Stats thread started..." << std::endl;
+    log(logINFO) << "Stats thread started...";
 
     StatMessage sm;
 
@@ -117,13 +117,11 @@ void Stats::Run() {
 		insertTimes.push_back(sm.time_us);
 		lockCounts.unlock();
 
-//		std::cout << "[Stats] Recived count: "
+//		log(logINFO) << "[Stats] Recived count: "
 //		    << sm.cnt << ", total: "
-//		    << Counts[InsertMetric]
-//		    << std::endl;
+//		    << Counts[InsertMetric];
 		break;
 	}*/
 
     }
-
 }

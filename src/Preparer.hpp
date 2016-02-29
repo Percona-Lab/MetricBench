@@ -14,6 +14,7 @@
 #include "CassandraDriver.hpp"
 #include "Config.hpp"
 #include "LatencyStats.hpp"
+#include "Logger.hpp"
 
 /* General class to handle benchmark, not DB specific */
 class Preparer {

@@ -23,15 +23,14 @@ void Preparer::prepProgressPrint(uint64_t startTs, uint64_t total) const {
 			static_cast<double> (insertProgress - startTs)  / total
 			) : 0 );
 
-	cout << std::fixed << std::setprecision(2)
+	log(logINFO) << std::fixed << std::setprecision(2)
 	    << "[Progress] Time: " << secFromStart << "[sec], "
 	    << "Progress: " << (insertProgress - startTs)
 	    << "/" << total << " = "
 	    << static_cast<double> (insertProgress - startTs) * 100 / (total)
 	    << "%, "
 	    << "Time left: " << estTotalTime - secFromStart << "[sec] "
-	    << "Est total: " << estTotalTime << "[sec]"
-	    << endl;
+	    << "Est total: " << estTotalTime << "[sec]";
     }
 
 }
@@ -48,39 +47,38 @@ void Preparer::Prep(){
 	Config::LoadMins * Config::MaxDevices * Config::DBTables);
 
     /* Populate the test table with data */
-	insertProgress = 0;
+    insertProgress = 0;
 
-        GenericDriver::ts_range tsRange=DataLoader->getTimestampRange(0);
-        uint64_t startTimestamp = std::max(tsRange.max+60,Config::StartTimestamp);
-	cout << "Running prepare from ts: "
-	<< startTimestamp << ", to ts: "
-	<< startTimestamp + Config::LoadMins * 60
-	<< ", range: "
-	<< startTimestamp + Config::LoadMins * 60 - startTimestamp
-	<< endl;
+    GenericDriver::ts_range tsRange=DataLoader->getTimestampRange(0);
+    uint64_t startTimestamp = std::max(tsRange.max+60,Config::StartTimestamp);
+    cout << "Running prepare from ts: "
+    << startTimestamp << ", to ts: "
+    << startTimestamp + Config::LoadMins * 60
+    << ", range: "
+    << startTimestamp + Config::LoadMins * 60 - startTimestamp
+    << endl;
 
-	/* Time Loop */
-	for (uint64_t ts = startTimestamp;
-			ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
-		/* Device Loop */
-		for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
+    /* Time Loop */
+    for (uint64_t ts = startTimestamp;
+                    ts < startTimestamp + Config::LoadMins * 60 ; ts += 60) {
+            /* Device Loop */
+            for (auto dc = 1; dc <= Config::MaxDevices ; dc++) {
 
+                /* tables loop */
+                for (auto table = 1; table <= Config::DBTables; table++) {
+                    Message m(Insert, ts, dc, table);
+                    tsQueue.push(m);
+                }
+                insertProgress+=Config::DBTables;
+                log(logDEBUG) << std::fixed << std::setprecision(2) << " insertProgress: " << insertProgress;
+                tsQueue.wait_size(Config::LoaderThreads*2);
+            }
 
-			/* tables loop */
-			for (auto table_id = 1; table_id <= Config::DBTables; table_id++) {
-				Message m(Insert, ts, dc, table_id);
-				tsQueue.push(m);
-			}
-			insertProgress+=Config::DBTables;
-			//cout << std::fixed << std::setprecision(2) << "DBG: insertProgress" << insertProgress << endl;
-			tsQueue.wait_size(Config::LoaderThreads*2);
-		}
+            tsQueue.wait_empty();
+    }
 
-		tsQueue.wait_empty();
+    log(logINFO) << "Data Load Finished";
 
-	}
-
-    cout << "#\t Data Load Finished" << endl;
     progressLoad = false;
     /* wait on reporter to finish */
     threadReporter.join();
@@ -112,12 +110,11 @@ void Preparer::Run(){
         startTimestamp,
 	Config::LoadMins * 60);
 
-    cout << "Running benchmark from ts: "
+    log(logINFO) << "Running benchmark from ts: "
 	<< startTimestamp << ", to ts: "
 	<< endTimestamp
 	<< ", range: "
-	<< endTimestamp - startTimestamp
-	<< endl;
+	<< endTimestamp - startTimestamp;
 
 
         /* Time loop */
@@ -152,7 +149,7 @@ void Preparer::Run(){
 	insertProgress = ts;
     }
 
-    cout << "#\t Benchmark Finished" << endl;
+    log(logINFO) << "Benchmark Finished";
     progressLoad = false;
     /* wait on reporter to finish */
     threadReporter.join();
