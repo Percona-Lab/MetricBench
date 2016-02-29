@@ -43,6 +43,25 @@ int main(int argc, const char **argv)
     std::string runMode = "run";
     std::string runDriver = "mysql";
 
+    // set of supported drivers
+    std::set<std::string> driverSet;
+    driverSet.insert("mysql");
+    driverSet.insert("mongodb");
+    driverSet.insert("cassandra");
+
+    // build driver set help message
+    std::string driverSetHelpMsg="Driver:";
+    std::set<std::string>::iterator driverSetIterator;
+    for (driverSetIterator = driverSet.begin(); driverSetIterator != driverSet.end(); driverSetIterator++) {
+      if (driverSetIterator != driverSet.begin()) {
+        if (driverSetIterator != driverSet.end()) {
+          driverSetHelpMsg += ",";
+        }
+      }
+      driverSetHelpMsg += " ";
+      driverSetHelpMsg += *driverSetIterator;
+    }
+
     // default log level
     std::string logLevelString = loglevel_e_Label[Config::DEFAULT_LOG_LEVEL];
     boost::algorithm::to_lower(logLevelString);
@@ -51,7 +70,7 @@ int main(int argc, const char **argv)
     po::options_description desc("Command line options");
     desc.add_options()
 	("help", "Help message")
-	("driver", po::value<string>(&runDriver)->default_value(runDriver), "Driver: mysql or mongodb")
+	("driver", po::value<string>(&runDriver)->default_value(runDriver), driverSetHelpMsg.c_str())
 	("mode", po::value<string>(&runMode)->default_value(""), "Mode - run or prepare (load "
 	    "initial dataset)")
         ("url",  po::value<string>(&Config::connHost)->default_value(Config::DEFAULT_HOST),
@@ -136,9 +155,24 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
+    // validate driver
+
     if (runDriver.compare("") == 0) {
         log(logERROR) << "ERROR: You must specify --driver.  Use --help for information.";
         return EXIT_FAILURE;
+    }
+
+    // build driver set help message
+    bool validDriver=false;
+    for (driverSetIterator = driverSet.begin(); driverSetIterator != driverSet.end(); driverSetIterator++) {
+      if (*driverSetIterator == runDriver) {
+        validDriver=true;
+        break;
+      }
+    }
+    if (!validDriver) {
+      log(logERROR) << "ERROR: Invalid driver specified: " << runDriver;
+      return EXIT_FAILURE;
     }
 
     // url fixups
